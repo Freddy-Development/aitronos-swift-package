@@ -46,6 +46,24 @@ public struct MessageRequestPayload: Codable {
     var instructions: String? = nil
     var additionalInstructions: String? = nil
     var messages: [Message] = []
+    
+    init(
+        organizationId: Int,
+        assistantId: Int,
+        threadId: Int? = nil,
+        model: String? = nil,
+        instructions: String? = nil,
+        additionalInstructions: String? = nil,
+        messages: [Message] = []
+    ) {
+        self.organizationId = organizationId
+        self.assistantId = assistantId
+        if let threadId { self.threadId = threadId }
+        if let model { self.model = model }
+        if let instructions { self.instructions = instructions }
+        if let additionalInstructions { self.additionalInstructions = additionalInstructions }
+        self.messages = messages
+    }
 
     func toDict() -> [String: Any] {
         let payload: [String: Any?] = [
