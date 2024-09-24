@@ -31,6 +31,11 @@ public struct StreamEvent: Sendable {
 public struct Message: Codable {
     let content: String
     let role: String
+    
+    init(content: String, role: String) {
+        self.content = content
+        self.role = role
+    }
 }
 
 // MessageRequestPayload equivalent to your Python dataclass
@@ -42,6 +47,24 @@ public struct MessageRequestPayload: Codable {
     var instructions: String? = nil
     var additionalInstructions: String? = nil
     var messages: [Message] = []
+    
+    init(
+        organizationId: Int,
+        assistantId: Int,
+        threadId: Int? = nil,
+        model: String? = nil,
+        instructions: String? = nil,
+        additionalInstructions: String? = nil,
+        messages: [Message] = []
+    ) {
+        self.organizationId = organizationId
+        self.assistantId = assistantId
+        if let threadId { self.threadId = threadId }
+        if let model { self.model = model }
+        if let instructions { self.instructions = instructions }
+        if let additionalInstructions { self.additionalInstructions = additionalInstructions }
+        self.messages = messages
+    }
 
     // Convert the payload to a dictionary and remove nil values, similar to to_dict() in Python
     func toDict() -> [String: Any] {
