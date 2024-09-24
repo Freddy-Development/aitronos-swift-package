@@ -8,64 +8,43 @@
 import Foundation
 
 // MARK: - StreamEvent Struct
-public struct StreamEvent: Codable {
-    public let event: String
-    public let status: String?
-    public let isResponse: Bool
-    public let response: String?
-    public let threadId: Int
-
-    public init(event: String, status: String?, isResponse: Bool, response: String?, threadId: Int) {
-        self.event = event
-        self.status = status
-        self.isResponse = isResponse
-        self.response = response
-        self.threadId = threadId
-    }
-
-    // Convert JSON dictionary to StreamEvent
-    public static func fromJson(_ data: [String: Any]) -> StreamEvent? {
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: data),
-              let event = try? JSONDecoder().decode(StreamEvent.self, from: jsonData) else {
+public struct StreamEvent: Sendable {
+    let event: String
+    let status: String?
+    let isResponse: Bool
+    let response: String?
+    let threadId: Int
+    
+    static func fromJson(_ json: [String: Any]) -> StreamEvent? {
+        guard let event = json["event"] as? String,
+              let isResponse = json["isResponse"] as? Bool,
+              let threadId = json["threadId"] as? Int else {
             return nil
         }
-        return event
+        let status = json["status"] as? String
+        let response = json["response"] as? String
+        return StreamEvent(event: event, status: status, isResponse: isResponse, response: response, threadId: threadId)
     }
 }
 
 // MARK: - Message Struct
 public struct Message: Codable {
-    public let content: String
-    public let role: String
-    public var type: String = "text"
-
-    public init(content: String, role: String, type: String = "text") {
-        guard role == "user" || role == "assistant" else {
-            fatalError("Role must be either 'user' or 'assistant'")
-        }
-
-        guard type == "text" || type == "other_allowed_type" else {
-            fatalError("Type must be 'text' or other allowed type")
-        }
-
-        self.content = content
-        self.role = role
-        self.type = type
-    }
+    let content: String
+    let role: String
 }
 
-// MARK: - MessageRequestPayload Struct
+// MessageRequestPayload equivalent to your Python dataclass
 public struct MessageRequestPayload: Codable {
-    public var organizationId: Int = 0
-    public var assistantId: Int = 0
-    public var threadId: Int?
-    public var model: String?
-    public var instructions: String?
-    public var additionalInstructions: String?
-    public var messages: [Message] = []
+    var organizationId: Int = 0
+    var assistantId: Int = 0
+    var threadId: Int? = nil
+    var model: String? = nil
+    var instructions: String? = nil
+    var additionalInstructions: String? = nil
+    var messages: [Message] = []
 
-    // Convert payload to dictionary
-    public func toDict() -> [String: Any] {
+    // Convert the payload to a dictionary and remove nil values, similar to to_dict() in Python
+    func toDict() -> [String: Any] {
         let payload: [String: Any?] = [
             "organization_id": organizationId,
             "assistant_id": assistantId,
@@ -75,7 +54,17 @@ public struct MessageRequestPayload: Codable {
             "additional_instructions": additionalInstructions,
             "messages": messages.map { $0.dictionaryRepresentation() }
         ]
-        return payload.compactMapValues { $0 }
+        return payload.compactMapValues { $0 } // Remove nil values
+    }
+}
+
+// Extension to convert Message struct to a dictionary
+extension Message {
+    func dictionaryRepresentation() -> [String: Any] {
+        return [
+            "content": content,
+            "role": role
+        ]
     }
 }
 
