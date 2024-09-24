@@ -32,7 +32,7 @@ public struct Message: Codable {
     let content: String
     let role: String
     
-    init(content: String, role: String) {
+    public init(content: String, role: String) {
         self.content = content
         self.role = role
     }
