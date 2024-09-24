@@ -38,7 +38,6 @@ public struct Message: Codable {
     }
 }
 
-// MessageRequestPayload equivalent to your Python dataclass
 public struct MessageRequestPayload: Codable {
     var organizationId: Int = 0
     var assistantId: Int = 0
@@ -66,7 +65,6 @@ public struct MessageRequestPayload: Codable {
         self.messages = messages
     }
 
-    // Convert the payload to a dictionary and remove nil values, similar to to_dict() in Python
     func toDict() -> [String: Any] {
         let payload: [String: Any?] = [
             "organization_id": organizationId,
@@ -81,7 +79,6 @@ public struct MessageRequestPayload: Codable {
     }
 }
 
-// Extension to convert Message struct to a dictionary
 extension Message {
     func dictionaryRepresentation() -> [String: Any] {
         return [
