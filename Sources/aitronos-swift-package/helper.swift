@@ -47,7 +47,7 @@ public struct MessageRequestPayload: Codable {
     var additionalInstructions: String? = nil
     var messages: [Message] = []
     
-    init(
+    public init(
         organizationId: Int,
         assistantId: Int,
         threadId: Int? = nil,
@@ -65,7 +65,7 @@ public struct MessageRequestPayload: Codable {
         self.messages = messages
     }
 
-    func toDict() -> [String: Any] {
+    public func toDict() -> [String: Any] {
         let payload: [String: Any?] = [
             "organization_id": organizationId,
             "assistant_id": assistantId,
