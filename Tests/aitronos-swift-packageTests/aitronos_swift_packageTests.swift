@@ -1,3 +1,10 @@
+//
+//  aitronos_swift_packageTests.swift
+//  aitronos_swift_packageTests
+//
+//  Created by Phillip Loacker on 24.09.2024.
+//
+
 import XCTest
 @testable import aitronos_swift_package
 
