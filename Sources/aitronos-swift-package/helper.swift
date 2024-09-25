@@ -10,7 +10,7 @@ import Foundation
 // MARK: - StreamEvent Struct
 public struct StreamEvent: Sendable {
     // Enum for Event types
-    enum Event: Codable, Equatable {
+    public enum Event: Codable, Equatable, Sendable {
         case threadRunCreated
         case threadRunQueued
         case threadRunInProgress
@@ -23,9 +23,9 @@ public struct StreamEvent: Sendable {
         case threadRunStepCompleted
         case threadRunCompleted
         case other(String) // Catch-all case for unknown events
-
+        
         // Custom initializer to handle raw values
-        init(rawValue: String) {
+        public init(rawValue: String) {
             switch rawValue {
             case "thread.run.created": self = .threadRunCreated
             case "thread.run.queued": self = .threadRunQueued
@@ -41,26 +41,9 @@ public struct StreamEvent: Sendable {
             default: self = .other(rawValue)
             }
         }
-
-        // Encoding and decoding support
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .other(let rawValue):
-                try container.encode(rawValue)
-            default:
-                try container.encode(self.rawValue)
-            }
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let rawValue = try container.decode(String.self)
-            self = Event(rawValue: rawValue)
-        }
-
+        
         // Raw value extraction for known cases
-        var rawValue: String {
+        public var rawValue: String {
             switch self {
             case .threadRunCreated: return "thread.run.created"
             case .threadRunQueued: return "thread.run.queued"
@@ -79,14 +62,14 @@ public struct StreamEvent: Sendable {
     }
 
     // Enum for Status types
-    enum Status: Codable, Equatable {
+    public enum Status: Codable, Equatable, Sendable {
         case queued
         case inProgress
         case completed
         case other(String) // Catch-all case for unknown statuses
 
         // Custom initializer to handle raw values
-        init(rawValue: String) {
+        public init(rawValue: String) {
             switch rawValue {
             case "queued": self = .queued
             case "in_progress": self = .inProgress
@@ -95,25 +78,8 @@ public struct StreamEvent: Sendable {
             }
         }
 
-        // Encoding and decoding support
-        func encode(to encoder: Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .other(let rawValue):
-                try container.encode(rawValue)
-            default:
-                try container.encode(self.rawValue)
-            }
-        }
-
-        init(from decoder: Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let rawValue = try container.decode(String.self)
-            self = Status(rawValue: rawValue)
-        }
-
         // Raw value extraction for known cases
-        var rawValue: String {
+        public var rawValue: String {
             switch self {
             case .queued: return "queued"
             case .inProgress: return "in_progress"
@@ -123,14 +89,14 @@ public struct StreamEvent: Sendable {
         }
     }
 
-    let event: Event
-    let status: Status?
-    let isResponse: Bool
-    let response: String?
-    let threadId: Int
+    public let event: Event
+    public let status: Status?
+    public let isResponse: Bool
+    public let response: String?
+    public let threadId: Int
 
     // Updated fromJson method to map JSON to enums
-    static func fromJson(_ json: [String: Any]) -> StreamEvent? {
+    static public func fromJson(_ json: [String: Any]) -> StreamEvent? {
         guard let eventString = json["event"] as? String,
               let isResponse = json["isResponse"] as? Bool,
               let threadId = json["threadId"] as? Int else {
@@ -148,24 +114,32 @@ public struct StreamEvent: Sendable {
 
 // MARK: - Message Struct
 public struct Message: Codable {
-    let content: String
-    let role: String
+    public let content: String
+    public let role: String
     
     public init(content: String, role: String) {
         self.content = content
         self.role = role
     }
+
+    public func dictionaryRepresentation() -> [String: Any] {
+        return [
+            "content": content,
+            "role": role
+        ]
+    }
 }
 
+// MARK: - MessageRequestPayload Struct
 public struct MessageRequestPayload: Codable {
-    var organizationId: Int = 0
-    var assistantId: Int = 0
-    var threadId: Int? = nil
-    var model: String? = nil
-    var instructions: String? = nil
-    var additionalInstructions: String? = nil
-    var messages: [Message] = []
-    
+    public var organizationId: Int
+    public var assistantId: Int
+    public var threadId: Int?
+    public var model: String?
+    public var instructions: String?
+    public var additionalInstructions: String?
+    public var messages: [Message]
+
     public init(
         organizationId: Int,
         assistantId: Int,
@@ -177,10 +151,10 @@ public struct MessageRequestPayload: Codable {
     ) {
         self.organizationId = organizationId
         self.assistantId = assistantId
-        if let threadId { self.threadId = threadId }
-        if let model { self.model = model }
-        if let instructions { self.instructions = instructions }
-        if let additionalInstructions { self.additionalInstructions = additionalInstructions }
+        self.threadId = threadId
+        self.model = model
+        self.instructions = instructions
+        self.additionalInstructions = additionalInstructions
         self.messages = messages
     }
 
@@ -198,23 +172,14 @@ public struct MessageRequestPayload: Codable {
     }
 }
 
-extension Message {
-    func dictionaryRepresentation() -> [String: Any] {
-        return [
-            "content": content,
-            "role": role
-        ]
-    }
-}
-
 // MARK: - JSON Validation Helper
-func isValidJson(data: String) -> Bool {
+public func isValidJson(data: String) -> Bool {
     guard let jsonData = data.data(using: .utf8) else { return false }
     return (try? JSONSerialization.jsonObject(with: jsonData)) != nil
 }
 
 // MARK: - Encodable Extension for Dictionary Conversion
-extension Encodable {
+public extension Encodable {
     func dictionaryRepresentation() -> [String: Any] {
         guard let data = try? JSONEncoder().encode(self),
               let dict = try? JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String: Any] else {
@@ -225,7 +190,7 @@ extension Encodable {
 }
 
 // MARK: - Regex Helper (for finding JSON-like structures)
-func extractJsonStrings(from buffer: String, using pattern: String) -> [String] {
+public func extractJsonStrings(from buffer: String, using pattern: String) -> [String] {
     let regex = try! NSRegularExpression(pattern: pattern, options: [])
     let matches = regex.matches(in: buffer, range: NSRange(buffer.startIndex..., in: buffer))
     return matches.map { (buffer as NSString).substring(with: $0.range) }

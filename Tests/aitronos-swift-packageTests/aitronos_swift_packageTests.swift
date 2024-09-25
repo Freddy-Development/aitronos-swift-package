@@ -39,7 +39,7 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         print("Received stream event: \(event)")
         
         // Ensure expectation is fulfilled only once
-        if event.status == "completed" && !isFulfilled {
+        if event.status == .completed && !isFulfilled {
             isFulfilled = true  // Set flag to prevent multiple fulfill calls
             expectation.fulfill()
         }
