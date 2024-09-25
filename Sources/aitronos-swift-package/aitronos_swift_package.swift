@@ -10,7 +10,6 @@
 
 import Foundation
 
-// Define a protocol to handle stream events and errors
 public protocol StreamEventDelegate: AnyObject {
     func handleStreamEvent(_ event: StreamEvent)
     func didEncounterError(_ error: Error)
@@ -110,10 +109,15 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                     if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
                         if let event = StreamEvent.fromJson(jsonDict) {
                             callback(event)
+                        } else {
+                            print("Invalid StreamEvent data")
                         }
                     }
                 } catch {
                     print("Failed to parse JSON: \(error)")
+                    DispatchQueue.main.async {
+                        self.delegate?.didEncounterError(error)
+                    }
                 }
             }
 

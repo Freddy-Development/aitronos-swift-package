@@ -9,20 +9,139 @@ import Foundation
 
 // MARK: - StreamEvent Struct
 public struct StreamEvent: Sendable {
-    let event: String
-    let status: String?
+    // Enum for Event types
+    enum Event: Codable, Equatable {
+        case threadRunCreated
+        case threadRunQueued
+        case threadRunInProgress
+        case threadRunStepCreated
+        case threadRunStepInProgress
+        case threadMessageCreated
+        case threadMessageInProgress
+        case threadMessageDelta
+        case threadMessageCompleted
+        case threadRunStepCompleted
+        case threadRunCompleted
+        case other(String) // Catch-all case for unknown events
+
+        // Custom initializer to handle raw values
+        init(rawValue: String) {
+            switch rawValue {
+            case "thread.run.created": self = .threadRunCreated
+            case "thread.run.queued": self = .threadRunQueued
+            case "thread.run.in_progress": self = .threadRunInProgress
+            case "thread.run.step.created": self = .threadRunStepCreated
+            case "thread.run.step.in_progress": self = .threadRunStepInProgress
+            case "thread.message.created": self = .threadMessageCreated
+            case "thread.message.in_progress": self = .threadMessageInProgress
+            case "thread.message.delta": self = .threadMessageDelta
+            case "thread.message.completed": self = .threadMessageCompleted
+            case "thread.run.step.completed": self = .threadRunStepCompleted
+            case "thread.run.completed": self = .threadRunCompleted
+            default: self = .other(rawValue)
+            }
+        }
+
+        // Encoding and decoding support
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .other(let rawValue):
+                try container.encode(rawValue)
+            default:
+                try container.encode(self.rawValue)
+            }
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            self = Event(rawValue: rawValue)
+        }
+
+        // Raw value extraction for known cases
+        var rawValue: String {
+            switch self {
+            case .threadRunCreated: return "thread.run.created"
+            case .threadRunQueued: return "thread.run.queued"
+            case .threadRunInProgress: return "thread.run.in_progress"
+            case .threadRunStepCreated: return "thread.run.step.created"
+            case .threadRunStepInProgress: return "thread.run.step.in_progress"
+            case .threadMessageCreated: return "thread.message.created"
+            case .threadMessageInProgress: return "thread.message.in_progress"
+            case .threadMessageDelta: return "thread.message.delta"
+            case .threadMessageCompleted: return "thread.message.completed"
+            case .threadRunStepCompleted: return "thread.run.step.completed"
+            case .threadRunCompleted: return "thread.run.completed"
+            case .other(let rawValue): return rawValue
+            }
+        }
+    }
+
+    // Enum for Status types
+    enum Status: Codable, Equatable {
+        case queued
+        case inProgress
+        case completed
+        case other(String) // Catch-all case for unknown statuses
+
+        // Custom initializer to handle raw values
+        init(rawValue: String) {
+            switch rawValue {
+            case "queued": self = .queued
+            case "in_progress": self = .inProgress
+            case "completed": self = .completed
+            default: self = .other(rawValue)
+            }
+        }
+
+        // Encoding and decoding support
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .other(let rawValue):
+                try container.encode(rawValue)
+            default:
+                try container.encode(self.rawValue)
+            }
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let rawValue = try container.decode(String.self)
+            self = Status(rawValue: rawValue)
+        }
+
+        // Raw value extraction for known cases
+        var rawValue: String {
+            switch self {
+            case .queued: return "queued"
+            case .inProgress: return "in_progress"
+            case .completed: return "completed"
+            case .other(let rawValue): return rawValue
+            }
+        }
+    }
+
+    let event: Event
+    let status: Status?
     let isResponse: Bool
     let response: String?
     let threadId: Int
-    
+
+    // Updated fromJson method to map JSON to enums
     static func fromJson(_ json: [String: Any]) -> StreamEvent? {
-        guard let event = json["event"] as? String,
+        guard let eventString = json["event"] as? String,
               let isResponse = json["isResponse"] as? Bool,
               let threadId = json["threadId"] as? Int else {
             return nil
         }
-        let status = json["status"] as? String
+
+        let event = Event(rawValue: eventString)
+        let statusString = json["status"] as? String
+        let status = statusString.map { Status(rawValue: $0) }
         let response = json["response"] as? String
+
         return StreamEvent(event: event, status: status, isResponse: isResponse, response: response, threadId: threadId)
     }
 }
