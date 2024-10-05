@@ -121,14 +121,11 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
         bufferQueue.async {
             // Parsing buffer for complete JSON objects
             while let jsonData = self.getCompleteJsonData() {
-                // Convert data to string for easier logging and handling
                 if let rawJsonString = String(data: jsonData, encoding: .utf8) {
-                    // Log the raw JSON data received
                     print("Raw JSON data received: \(rawJsonString)")
 
                     // Check if the received string is empty or just contains whitespace
                     if rawJsonString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        // If the string is empty, skip further processing
                         print("Skipping empty or whitespace-only JSON data")
                         continue
                     }
@@ -142,27 +139,26 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
 
                     // Parse only if the number of opening and closing brackets match
                     if openBracketsCount == closeBracketsCount {
-                        // Convert the accumulated buffer back to Data
                         if let validJsonData = self.buffer.data(using: .utf8) {
                             do {
                                 // Parse the accumulated JSON array
                                 if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
-                                    print("Parsed JSON array: \(jsonArray)") // Debug the parsed array
+                                    print("Parsed JSON array: \(jsonArray)")
 
                                     // Process each event in the array
                                     for jsonDict in jsonArray {
-                                        // Parse each event into a StreamEvent
-                                        if let event = StreamEvent.fromJson(jsonDict) {
-                                            // Handle `thread.message.delta` events and concatenate responses
-                                            if event.event == .threadMessageDelta, let response = event.response {
-                                                // Concatenate the message delta response (like "Hello", "How", "can", "I")
-                                                self.concatenateResponse(response)
+                                        // Check if the event is "thread.run.step.created"
+                                        if let eventType = jsonDict["event"] as? String,
+                                           eventType == "thread.run.step.created" {
+                                            // Convert the matching event into a StreamEvent
+                                            if let event = StreamEvent.fromJson(jsonDict) {
+                                                // Call the delegate or callback with the matching event
+                                                DispatchQueue.main.async {
+                                                    callback(event)
+                                                }
+                                            } else {
+                                                print("Invalid StreamEvent data for event: \(eventType)")
                                             }
-
-                                            // Call the callback for other events
-                                            callback(event)
-                                        } else {
-                                            print("Invalid StreamEvent data in array")
                                         }
                                     }
 
