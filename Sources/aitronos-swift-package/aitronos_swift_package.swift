@@ -115,14 +115,29 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
         bufferQueue.async {
             // Parsing buffer for complete JSON objects
             while let jsonData = self.getCompleteJsonData() {
+                // Print raw JSON data as string
+                if let rawJsonString = String(data: jsonData, encoding: .utf8) {
+                    print("Raw JSON data received: \(rawJsonString)")
+                } else {
+                    print("Failed to convert data to UTF-8 string")
+                }
+                
                 do {
-                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                       let event = StreamEvent.fromJson(jsonDict) {
-                        callback(event)
+                    // Attempt to parse the raw JSON into a dictionary
+                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+                        print("Parsed JSON dictionary: \(jsonDict)") // Print parsed dictionary for further inspection
+                        
+                        // Attempt to convert the JSON dictionary to a StreamEvent
+                        if let event = StreamEvent.fromJson(jsonDict) {
+                            callback(event)
+                        } else {
+                            print("Invalid StreamEvent data")
+                        }
                     } else {
-                        print("Invalid StreamEvent data")
+                        print("Received data is not a valid JSON dictionary")
                     }
                 } catch {
+                    // Print the error and call the delegate's error handler
                     print("Failed to parse JSON: \(error)")
                     DispatchQueue.main.async {
                         self.delegate?.didEncounterError(error)
