@@ -118,34 +118,48 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 // Print raw JSON data as string
                 if let rawJsonString = String(data: jsonData, encoding: .utf8) {
                     print("Raw JSON data received: \(rawJsonString)")
+                    
+                    // Append to buffer to accumulate full JSON
+                    self.buffer += rawJsonString
+                    
+                    // Check if the JSON is complete by counting opening and closing brackets
+                    let openBracketsCount = self.buffer.filter { $0 == "[" }.count
+                    let closeBracketsCount = self.buffer.filter { $0 == "]" }.count
+                    
+                    // Parse only if the number of opening and closing brackets match
+                    if openBracketsCount == closeBracketsCount {
+                        if let validJsonData = self.buffer.data(using: .utf8) {
+                            do {
+                                // Check if the data is a JSON array
+                                if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
+                                    print("Parsed JSON array: \(jsonArray)") // Print the array to debug
 
-                    // Convert the raw JSON string back to Data
-                    if let validJsonData = rawJsonString.data(using: .utf8) {
-                        do {
-                            // Check if the data is a JSON array
-                            if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
-                                print("Parsed JSON array: \(jsonArray)") // Print the array to debug
-
-                                // Process each event in the array
-                                for jsonDict in jsonArray {
-                                    if let event = StreamEvent.fromJson(jsonDict) {
-                                        callback(event)
-                                    } else {
-                                        print("Invalid StreamEvent data in array")
+                                    // Process each event in the array
+                                    for jsonDict in jsonArray {
+                                        if let event = StreamEvent.fromJson(jsonDict) {
+                                            callback(event)
+                                        } else {
+                                            print("Invalid StreamEvent data in array")
+                                        }
                                     }
+                                    
+                                    // Clear buffer after successful parsing
+                                    self.buffer = ""
+                                } else {
+                                    print("Received data is not a valid JSON array")
                                 }
-                            } else {
-                                print("Received data is not a valid JSON array")
+                            } catch {
+                                // Print the error and call the delegate's error handler
+                                print("Failed to parse JSON: \(error)")
+                                DispatchQueue.main.async {
+                                    self.delegate?.didEncounterError(error)
+                                }
                             }
-                        } catch {
-                            // Print the error and call the delegate's error handler
-                            print("Failed to parse JSON: \(error)")
-                            DispatchQueue.main.async {
-                                self.delegate?.didEncounterError(error)
-                            }
+                        } else {
+                            print("Failed to convert raw JSON string to Data")
                         }
                     } else {
-                        print("Failed to convert raw JSON string to Data")
+                        print("JSON data is incomplete, waiting for more data")
                     }
                 } else {
                     print("Failed to convert data to UTF-8 string")
