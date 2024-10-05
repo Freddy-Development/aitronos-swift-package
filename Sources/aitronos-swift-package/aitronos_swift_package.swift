@@ -121,24 +121,33 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
         bufferQueue.async {
             // Parsing buffer for complete JSON objects
             while let jsonData = self.getCompleteJsonData() {
-                // Print raw JSON data as string
+                // Convert data to string for easier logging and handling
                 if let rawJsonString = String(data: jsonData, encoding: .utf8) {
+                    // Log the raw JSON data received
                     print("Raw JSON data received: \(rawJsonString)")
-                    
-                    // Append to buffer to accumulate full JSON
+
+                    // Check if the received string is empty or just contains whitespace
+                    if rawJsonString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        // If the string is empty, skip further processing
+                        print("Skipping empty or whitespace-only JSON data")
+                        continue
+                    }
+
+                    // Append to buffer to accumulate full JSON if necessary
                     self.buffer += rawJsonString
-                    
+
                     // Check if the JSON is complete by counting opening and closing brackets
                     let openBracketsCount = self.buffer.filter { $0 == "[" }.count
                     let closeBracketsCount = self.buffer.filter { $0 == "]" }.count
-                    
+
                     // Parse only if the number of opening and closing brackets match
                     if openBracketsCount == closeBracketsCount {
+                        // Convert the accumulated buffer back to Data
                         if let validJsonData = self.buffer.data(using: .utf8) {
                             do {
-                                // Parse the JSON array
+                                // Parse the accumulated JSON array
                                 if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
-                                    print("Parsed JSON array: \(jsonArray)") // Print the array to debug
+                                    print("Parsed JSON array: \(jsonArray)") // Debug the parsed array
 
                                     // Process each event in the array
                                     for jsonDict in jsonArray {
@@ -156,7 +165,7 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                                             print("Invalid StreamEvent data in array")
                                         }
                                     }
-                                    
+
                                     // Clear buffer after successful parsing
                                     self.buffer = ""
                                 } else {
@@ -170,7 +179,7 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                                 }
                             }
                         } else {
-                            print("Failed to convert raw JSON string to Data")
+                            print("Failed to convert accumulated JSON buffer to Data")
                         }
                     } else {
                         print("JSON data is incomplete, waiting for more data")
