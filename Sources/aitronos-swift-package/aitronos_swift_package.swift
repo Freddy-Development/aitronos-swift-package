@@ -123,18 +123,20 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 }
                 
                 do {
-                    // Attempt to parse the raw JSON into a dictionary
-                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                        print("Parsed JSON dictionary: \(jsonDict)") // Print parsed dictionary for further inspection
-                        
-                        // Attempt to convert the JSON dictionary to a StreamEvent
-                        if let event = StreamEvent.fromJson(jsonDict) {
-                            callback(event)
-                        } else {
-                            print("Invalid StreamEvent data")
+                    // Check if the data is a JSON array
+                    if let jsonArray = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] {
+                        print("Parsed JSON array: \(jsonArray)") // Print the array to debug
+
+                        // Process each event in the array
+                        for jsonDict in jsonArray {
+                            if let event = StreamEvent.fromJson(jsonDict) {
+                                callback(event)
+                            } else {
+                                print("Invalid StreamEvent data in array")
+                            }
                         }
                     } else {
-                        print("Received data is not a valid JSON dictionary")
+                        print("Received data is not a valid JSON array")
                     }
                 } catch {
                     // Print the error and call the delegate's error handler
