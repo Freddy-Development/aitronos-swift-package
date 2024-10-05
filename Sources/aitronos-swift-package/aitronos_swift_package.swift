@@ -118,32 +118,37 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 // Print raw JSON data as string
                 if let rawJsonString = String(data: jsonData, encoding: .utf8) {
                     print("Raw JSON data received: \(rawJsonString)")
-                } else {
-                    print("Failed to convert data to UTF-8 string")
-                }
-                
-                do {
-                    // Check if the data is a JSON array
-                    if let jsonArray = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] {
-                        print("Parsed JSON array: \(jsonArray)") // Print the array to debug
 
-                        // Process each event in the array
-                        for jsonDict in jsonArray {
-                            if let event = StreamEvent.fromJson(jsonDict) {
-                                callback(event)
+                    // Convert the raw JSON string back to Data
+                    if let validJsonData = rawJsonString.data(using: .utf8) {
+                        do {
+                            // Check if the data is a JSON array
+                            if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
+                                print("Parsed JSON array: \(jsonArray)") // Print the array to debug
+
+                                // Process each event in the array
+                                for jsonDict in jsonArray {
+                                    if let event = StreamEvent.fromJson(jsonDict) {
+                                        callback(event)
+                                    } else {
+                                        print("Invalid StreamEvent data in array")
+                                    }
+                                }
                             } else {
-                                print("Invalid StreamEvent data in array")
+                                print("Received data is not a valid JSON array")
+                            }
+                        } catch {
+                            // Print the error and call the delegate's error handler
+                            print("Failed to parse JSON: \(error)")
+                            DispatchQueue.main.async {
+                                self.delegate?.didEncounterError(error)
                             }
                         }
                     } else {
-                        print("Received data is not a valid JSON array")
+                        print("Failed to convert raw JSON string to Data")
                     }
-                } catch {
-                    // Print the error and call the delegate's error handler
-                    print("Failed to parse JSON: \(error)")
-                    DispatchQueue.main.async {
-                        self.delegate?.didEncounterError(error)
-                    }
+                } else {
+                    print("Failed to convert data to UTF-8 string")
                 }
             }
         }
