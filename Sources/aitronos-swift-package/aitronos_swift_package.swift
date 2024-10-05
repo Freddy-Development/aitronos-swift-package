@@ -130,13 +130,21 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                     if openBracketsCount == closeBracketsCount {
                         if let validJsonData = self.buffer.data(using: .utf8) {
                             do {
-                                // Check if the data is a JSON array
+                                // Parse the JSON array
                                 if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
                                     print("Parsed JSON array: \(jsonArray)") // Print the array to debug
 
                                     // Process each event in the array
                                     for jsonDict in jsonArray {
+                                        // Parse each event into a StreamEvent
                                         if let event = StreamEvent.fromJson(jsonDict) {
+                                            // Handle `thread.message.delta` events and concatenate responses
+                                            if event.event == .threadMessageDelta, let response = event.response {
+                                                // Concatenate the message delta response (like "Hello", "How", "can", "I")
+                                                self.concatenateResponse(response)
+                                            }
+
+                                            // Call the callback for other events
                                             callback(event)
                                         } else {
                                             print("Invalid StreamEvent data in array")
