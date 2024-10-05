@@ -31,8 +31,14 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
     
     private var isCompleted = false  // Track whether stream has completed
     
-    // Delegate to handle stream events and errors
     public weak var delegate: StreamEventDelegate?
+    private var accumulatedResponse: String = ""
+
+    private func concatenateResponse(_ response: String) {
+        // Accumulate the response string
+        accumulatedResponse += response
+        print("Current accumulated response: \(accumulatedResponse)")
+    }
 
     public init(token: String) throws {
         guard let url = baseUrls["v1"] else {
