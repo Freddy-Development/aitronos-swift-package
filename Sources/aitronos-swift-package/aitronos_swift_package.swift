@@ -147,18 +147,14 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
 
                                     // Process each event in the array
                                     for jsonDict in jsonArray {
-                                        // Check if the event is "thread.run.step.created"
-                                        if let eventType = jsonDict["event"] as? String,
-                                           eventType == "thread.run.step.created" {
-                                            // Convert the matching event into a StreamEvent
-                                            if let event = StreamEvent.fromJson(jsonDict) {
-                                                // Call the delegate or callback with the matching event
-                                                DispatchQueue.main.async {
-                                                    callback(event)
-                                                }
-                                            } else {
-                                                print("Invalid StreamEvent data for event: \(eventType)")
+                                        // Convert the matching event into a StreamEvent for all event types
+                                        if let event = StreamEvent.fromJson(jsonDict) {
+                                            // Call the delegate or callback with the matching event
+                                            DispatchQueue.main.async {
+                                                callback(event)
                                             }
+                                        } else {
+                                            print("Invalid StreamEvent data")
                                         }
                                     }
 
