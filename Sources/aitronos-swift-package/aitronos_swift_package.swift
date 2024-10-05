@@ -119,7 +119,7 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
     // Process buffer to extract valid JSON objects from chunks
     private func processBuffer(callback: @Sendable @escaping (StreamEvent?) -> Void) {
         bufferQueue.async {
-            // Parsing buffer for complete JSON objects
+            // Append new chunk to the buffer
             while let jsonData = self.getCompleteJsonData() {
                 if let rawJsonString = String(data: jsonData, encoding: .utf8) {
                     print("Raw JSON data received: \(rawJsonString)")
@@ -133,53 +133,59 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                     // Append to buffer to accumulate full JSON if necessary
                     self.buffer += rawJsonString
 
-                    // Check if the JSON is complete by counting opening and closing brackets
-                    let openBracketsCount = self.buffer.filter { $0 == "[" }.count
-                    let closeBracketsCount = self.buffer.filter { $0 == "]" }.count
+                    // Try to extract valid JSON objects
+                    self.processBufferedEvents(callback: callback)
 
-                    // Parse only if the number of opening and closing brackets match
-                    if openBracketsCount == closeBracketsCount {
-                        if let validJsonData = self.buffer.data(using: .utf8) {
-                            do {
-                                // Parse the accumulated JSON array
-                                if let jsonArray = try JSONSerialization.jsonObject(with: validJsonData) as? [[String: Any]] {
-                                    print("Parsed JSON array: \(jsonArray)")
-
-                                    // Process each event in the array
-                                    for jsonDict in jsonArray {
-                                        // Convert the matching event into a StreamEvent for all event types
-                                        if let event = StreamEvent.fromJson(jsonDict) {
-                                            // Call the delegate or callback with the matching event
-                                            DispatchQueue.main.async {
-                                                callback(event)
-                                            }
-                                        } else {
-                                            print("Invalid StreamEvent data")
-                                        }
-                                    }
-
-                                    // Clear buffer after successful parsing
-                                    self.buffer = ""
-                                } else {
-                                    print("Received data is not a valid JSON array")
-                                }
-                            } catch {
-                                // Print the error and call the delegate's error handler
-                                print("Failed to parse JSON: \(error)")
-                                DispatchQueue.main.async {
-                                    self.delegate?.didEncounterError(error)
-                                }
-                            }
-                        } else {
-                            print("Failed to convert accumulated JSON buffer to Data")
-                        }
-                    } else {
-                        print("JSON data is incomplete, waiting for more data")
-                    }
+                    // Log buffer after processing
+                    print("Buffer after processing: \(self.buffer)")
                 } else {
                     print("Failed to convert data to UTF-8 string")
                 }
             }
+        }
+    }
+
+    private func processBufferedEvents(callback: @Sendable @escaping (StreamEvent?) -> Void) {
+        // Regular expression to match JSON objects inside the buffer
+        let regexPattern = "\\{[^{}]*\\}" // Matches JSON objects
+        let regex = try! NSRegularExpression(pattern: regexPattern, options: [])
+        
+        // Search for JSON objects in the buffer
+        let matches = regex.matches(in: self.buffer, range: NSRange(self.buffer.startIndex..., in: self.buffer))
+
+        // Iterate over matches and process each event
+        for match in matches {
+            let jsonStr = (self.buffer as NSString).substring(with: match.range)
+
+            // Convert the extracted JSON string to data
+            if let jsonData = jsonStr.data(using: .utf8) {
+                do {
+                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+                        // Convert the matching event into a StreamEvent for all event types
+                        if let event = StreamEvent.fromJson(jsonDict) {
+                            // Call the delegate or callback with the matching event
+                            DispatchQueue.main.async {
+                                callback(event)
+                            }
+                        } else {
+                            print("Invalid StreamEvent data")
+                        }
+                    } else {
+                        print("Received data is not a valid JSON dictionary")
+                    }
+                } catch {
+                    print("Failed to parse JSON object: \(error)")
+                    DispatchQueue.main.async {
+                        self.delegate?.didEncounterError(error)
+                    }
+                }
+            }
+        }
+
+        // Remove processed JSON objects from the buffer
+        if let lastMatch = matches.last {
+            let endIndex = self.buffer.index(self.buffer.startIndex, offsetBy: lastMatch.range.upperBound)
+            self.buffer = String(self.buffer[endIndex...])
         }
     }
     
