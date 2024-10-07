@@ -90,41 +90,70 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
     // Process buffer to extract complete JSON objects
     private func processBuffer(callback: @Sendable @escaping (StreamEvent?) -> Void) {
         bufferQueue.async {
-            // Look for complete JSON objects in the buffer
-            let regex = try! NSRegularExpression(pattern: "\\{[^{}]*\\}|\\[[^\\[\\]]*\\]", options: [])
-            let matches = regex.matches(in: self.buffer, range: NSRange(self.buffer.startIndex..., in: self.buffer))
+            var braceCount = 0
+            var startIndex: String.Index? = nil  // Declare `startIndex` as an optional `String.Index`
+            var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
 
-            // Iterate through the matches and process each valid JSON
-            for match in matches {
-                let jsonStr = (self.buffer as NSString).substring(with: match.range)
-                guard let jsonData = jsonStr.data(using: .utf8) else { continue }
+            // Iterate over the string indices and characters
+            for currentIndex in self.buffer.indices {
+                let char = self.buffer[currentIndex]
 
-                do {
-                    // Attempt to decode JSON into a dictionary
-                    if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-                        if let event = StreamEvent.fromJson(jsonDict) {
-                            callback(event)
-                        } else {
-                            print("Invalid StreamEvent data")
+                // Increment brace count on opening brace '{'
+                if char == "{" {
+                    braceCount += 1
+                    // If it's the first opening brace, mark the startIndex
+                    if startIndex == nil {
+                        startIndex = currentIndex
+                    }
+                }
+                // Decrement brace count on closing brace '}'
+                else if char == "}" {
+                    braceCount -= 1
+                    // Ensure the braceCount doesn't become negative
+                    if braceCount < 0 {
+                        print("Unbalanced braces detected!")
+                        braceCount = 0
+                        startIndex = nil
+                        continue
+                    }
+                }
+
+                // When braceCount is 0, it means a complete JSON object is found
+                if braceCount == 0, let startIndexUnwrapped = startIndex {
+                    let jsonStr = String(self.buffer[startIndexUnwrapped...currentIndex])
+
+                    // Process the JSON string
+                    if let jsonData = jsonStr.data(using: .utf8) {
+                        do {
+                            if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                               let event = StreamEvent.fromJson(jsonDict) {
+                                callback(event)
+                            } else {
+                                print("Invalid StreamEvent data")
+                            }
+                        } catch {
+                            print("Failed to parse JSON: \(error)")
+                            DispatchQueue.main.async {
+                                self.delegate?.didEncounterError(error)
+                            }
                         }
                     }
-                } catch {
-                    print("Failed to parse JSON: \(error)")
-                    DispatchQueue.main.async {
-                        self.delegate?.didEncounterError(error)
-                    }
+
+                    // Track the range of the buffer that was processed to remove it later
+                    let endIndex = self.buffer.index(after: currentIndex)  // Move past the currentIndex for an open-ended range
+                    rangesToRemove.append(startIndexUnwrapped..<endIndex)  // Use `..<` for a Range
+                    startIndex = nil  // Reset startIndex for the next object
                 }
             }
 
-            // Remove processed JSON from the buffer
-            if let lastMatch = matches.last {
-                let endIndex = self.buffer.index(self.buffer.startIndex, offsetBy: lastMatch.range.upperBound)
-                self.buffer = String(self.buffer[endIndex...])
+            // Remove all processed ranges from the buffer after the loop
+            for range in rangesToRemove.reversed() {
+                self.buffer.removeSubrange(range)
             }
 
-            // Clear buffer if no valid JSON has been processed
-            if matches.isEmpty {
-                self.buffer = ""
+            // Log an error if there are unbalanced braces left after processing
+            if braceCount != 0 {
+                print("Warning: Unbalanced braces at the end of buffer processing.")
             }
         }
     }
