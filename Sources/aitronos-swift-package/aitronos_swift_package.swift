@@ -83,12 +83,24 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 self.delegate?.didEncounterError(error)
             }
         } else {
+            // Force process any remaining buffer when stream completes
+            bufferQueue.async {
+                self.processBuffer(forceProcess: true) { [weak self] event in
+                    guard let self = self else { return }
+
+                    if let event = event {
+                        DispatchQueue.main.async {
+                            self.delegate?.handleStreamEvent(event)
+                        }
+                    }
+                }
+            }
             print("Stream completed successfully")
         }
     }
 
     // Process buffer to extract complete JSON objects
-    private func processBuffer(callback: @Sendable @escaping (StreamEvent?) -> Void) {
+    private func processBuffer(forceProcess: Bool = false, callback: @Sendable @escaping (StreamEvent?) -> Void) {
         bufferQueue.async {
             var braceCount = 0
             var startIndex: String.Index? = nil  // Declare `startIndex` as an optional `String.Index`
@@ -101,7 +113,6 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 // Increment brace count on opening brace '{'
                 if char == "{" {
                     braceCount += 1
-                    // If it's the first opening brace, mark the startIndex
                     if startIndex == nil {
                         startIndex = currentIndex
                     }
@@ -109,7 +120,6 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                 // Decrement brace count on closing brace '}'
                 else if char == "}" {
                     braceCount -= 1
-                    // Ensure the braceCount doesn't become negative
                     if braceCount < 0 {
                         print("Unbalanced braces detected!")
                         braceCount = 0
@@ -118,11 +128,10 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                     }
                 }
 
-                // When braceCount is 0, it means a complete JSON object is found
+                // Process complete JSON objects or force process remaining buffer on stream completion
                 if braceCount == 0, let startIndexUnwrapped = startIndex {
                     let jsonStr = String(self.buffer[startIndexUnwrapped...currentIndex])
 
-                    // Process the JSON string
                     if let jsonData = jsonStr.data(using: .utf8) {
                         do {
                             if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
@@ -140,10 +149,32 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
                     }
 
                     // Track the range of the buffer that was processed to remove it later
-                    let endIndex = self.buffer.index(after: currentIndex)  // Move past the currentIndex for an open-ended range
-                    rangesToRemove.append(startIndexUnwrapped..<endIndex)  // Use `..<` for a Range
-                    startIndex = nil  // Reset startIndex for the next object
+                    let endIndex = self.buffer.index(after: currentIndex)
+                    rangesToRemove.append(startIndexUnwrapped..<endIndex)
+                    startIndex = nil
                 }
+            }
+
+            // Force process buffer if braces are unbalanced and stream has completed
+            if forceProcess, let startIndexUnwrapped = startIndex {
+                print("Force processing remaining buffer after stream completion")
+                let jsonStr = String(self.buffer[startIndexUnwrapped...])
+                if let jsonData = jsonStr.data(using: .utf8) {
+                    do {
+                        if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                           let event = StreamEvent.fromJson(jsonDict) {
+                            callback(event)
+                        } else {
+                            print("Invalid StreamEvent data during forced processing")
+                        }
+                    } catch {
+                        print("Failed to parse JSON in forced buffer processing: \(error)")
+                        DispatchQueue.main.async {
+                            self.delegate?.didEncounterError(error)
+                        }
+                    }
+                }
+                self.buffer.removeAll()  // Clear buffer after final processing
             }
 
             // Remove all processed ranges from the buffer after the loop
@@ -152,7 +183,7 @@ public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Senda
             }
 
             // Log an error if there are unbalanced braces left after processing
-            if braceCount != 0 {
+            if braceCount != 0 && !forceProcess {
                 print("Warning: Unbalanced braces at the end of buffer processing.")
             }
         }
