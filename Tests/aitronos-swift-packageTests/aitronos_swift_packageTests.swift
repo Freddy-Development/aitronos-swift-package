@@ -58,9 +58,12 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
 
         // Check event status for stream completion, handling nil status for message deltas
         if event.status == .completed && !isFulfilled {
-            isFulfilled = true
-            print("Stream completed, fulfilling expectation")
-            expectation.fulfill()
+            if event.response != nil {
+                isFulfilled = true
+                print("Stream completed, fulfilling expectation")
+                expectation.fulfill()
+            }
+           
         } else if event.event == .threadMessageDelta {
             // Handle partial message deltas separately, as they may not have a status
             print("Received partial message: \(event.response ?? "No response data")")
