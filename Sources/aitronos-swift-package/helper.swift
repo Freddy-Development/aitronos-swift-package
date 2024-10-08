@@ -37,6 +37,7 @@ public struct StreamEvent: Sendable {
             case "thread.message.delta": self = .threadMessageDelta
             case "thread.message.completed": self = .threadMessageCompleted
             case "thread.run.step.completed": self = .threadRunStepCompleted
+            case "thread.run.step.delta": self = .threadMessageDelta
             case "thread.run.completed": self = .threadRunCompleted
             default: self = .other(rawValue)
             }
