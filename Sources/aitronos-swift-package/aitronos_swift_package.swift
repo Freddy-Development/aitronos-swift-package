@@ -16,7 +16,7 @@ public protocol StreamEventDelegate: AnyObject {
 }
 
 public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Sendable {
-    private let baseUrls: [String: String] = ["v1": "https://freddy-core-api.azurewebsites.net/v1"]
+    private let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
     private let token: String
     private let baseUrl: String
     private var session: URLSession!
