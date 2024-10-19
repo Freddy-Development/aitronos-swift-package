@@ -12,7 +12,7 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
 
     var expectation: XCTestExpectation!
     var isFulfilled = false  // To track if expectation has been fulfilled
-    let testTimeout: TimeInterval = 120.0  // Timeout for the stream to complete
+    let testTimeout: TimeInterval = 60  // Timeout for the stream to complete
 
     func testRunStream() async throws {
         print("Starting testRunStream")
