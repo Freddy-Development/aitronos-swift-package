@@ -10,182 +10,44 @@
 
 import Foundation
 
-public protocol StreamEventDelegate: AnyObject {
-    func handleStreamEvent(_ event: StreamEvent)
-    func didEncounterError(_ error: Error)
-}
-
-public final class FreddyApi: NSObject, URLSessionDataDelegate, @unchecked Sendable {
-    private let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
-    private let token: String
-    private let baseUrl: String
-    private var session: URLSession!
-    private let bufferQueue = DispatchQueue(label: "com.aitronos.bufferQueue", qos: .utility)
-    private var buffer = ""  // Mutable buffer to accumulate data
-    private var isCompleted = false  // Track whether stream has completed
-    
-    public weak var delegate: StreamEventDelegate?
-
-    public init(token: String) {
-        guard let url = baseUrls["v1"] else {
-            fatalError("Unsupported API version")
-        }
-        self.token = token
-        self.baseUrl = url
-        super.init()
-        self.session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+public class Aitronos: @unchecked Sendable {
+    public var appHive: AppHive {
+        AppHive(apiKey: userApiKey)
     }
+    public var freddyApi: FreddyApi {
+        FreddyApi()
+    }
+    public var userApiKey = ""
 
-    public func createStream(payload: MessageRequestPayload, delegate: StreamEventDelegate) {
-        self.delegate = delegate
-        let url = URL(string: "\(self.baseUrl)/messages/run-stream")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(self.token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let payloadDict = payload.toDict()
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: payloadDict, options: [])
-            request.httpBody = jsonData
-        } catch {
-            delegate.didEncounterError(error)
-            return
+    public init(username: String? = nil, password: String? = nil, apiKey: String? = nil) {
+        // Ensure either both username and password are provided or an API key is provided
+        guard (username != nil && password != nil) || apiKey != nil else {
+            fatalError("You must provide either both username and password or an API key")
         }
 
-        let task = session.dataTask(with: request)
-        task.resume()
-    }
-
-    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        if let chunk = String(data: data, encoding: .utf8) {
-            bufferQueue.async {
-                self.buffer += chunk
-                self.processBuffer { [weak self] event in
-                    guard let self = self else { return }
+        if let apiKey = apiKey {
+            // Use provided API key
+            userApiKey = apiKey
+        } else if let username = username, let password = password {
+            // If no API key, login using username and password
+            AppHive.login(usernmeEmail: username, password: password) { [weak self] result in
+                guard let strongSelf = self else {
+                    print("Aitronos instance was deallocated")
+                    return
+                }
+                switch result {
+                case .success(let response):
+                    // Store the token on success
+                    strongSelf.userApiKey = response.token
+                    print("Successfully logged in. API Key: \(strongSelf.userApiKey)")
                     
-                    if let event = event {
-                        DispatchQueue.main.async {
-                            self.delegate?.handleStreamEvent(event)
-                        }
-                    }
+                case .failure(let error):
+                    // Handle login failure
+                    print("Failed to login to AppHive: \(error)")
+                    fatalError("Failed to login to AppHive with provided credentials.")
                 }
-            }
-        }
-    }
-
-    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if isCompleted { return }
-        isCompleted = true
-
-        if let error = error {
-            DispatchQueue.main.async {
-                self.delegate?.didEncounterError(error)
-            }
-        } else {
-            // Force process any remaining buffer when stream completes
-            bufferQueue.async {
-                self.processBuffer(forceProcess: true) { [weak self] event in
-                    guard let self = self else { return }
-
-                    if let event = event {
-                        DispatchQueue.main.async {
-                            self.delegate?.handleStreamEvent(event)
-                        }
-                    }
-                }
-            }
-            print("Stream completed successfully")
-        }
-    }
-
-    // Process buffer to extract complete JSON objects
-    private func processBuffer(forceProcess: Bool = false, callback: @Sendable @escaping (StreamEvent?) -> Void) {
-        bufferQueue.async {
-            var braceCount = 0
-            var startIndex: String.Index? = nil  // Declare `startIndex` as an optional `String.Index`
-            var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
-
-            // Iterate over the string indices and characters
-            for currentIndex in self.buffer.indices {
-                let char = self.buffer[currentIndex]
-
-                // Increment brace count on opening brace '{'
-                if char == "{" {
-                    braceCount += 1
-                    if startIndex == nil {
-                        startIndex = currentIndex
-                    }
-                }
-                // Decrement brace count on closing brace '}'
-                else if char == "}" {
-                    braceCount -= 1
-                    if braceCount < 0 {
-                        print("Unbalanced braces detected!")
-                        braceCount = 0
-                        startIndex = nil
-                        continue
-                    }
-                }
-
-                // Process complete JSON objects or force process remaining buffer on stream completion
-                if braceCount == 0, let startIndexUnwrapped = startIndex {
-                    let jsonStr = String(self.buffer[startIndexUnwrapped...currentIndex])
-
-                    if let jsonData = jsonStr.data(using: .utf8) {
-                        do {
-                            if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                               let event = StreamEvent.fromJson(jsonDict) {
-                                callback(event)
-                            } else {
-                                print("Invalid StreamEvent data")
-                            }
-                        } catch {
-                            print("Failed to parse JSON: \(error)")
-                            DispatchQueue.main.async {
-                                self.delegate?.didEncounterError(error)
-                            }
-                        }
-                    }
-
-                    // Track the range of the buffer that was processed to remove it later
-                    let endIndex = self.buffer.index(after: currentIndex)
-                    rangesToRemove.append(startIndexUnwrapped..<endIndex)
-                    startIndex = nil
-                }
-            }
-
-            // Force process buffer if braces are unbalanced and stream has completed
-            if forceProcess, let startIndexUnwrapped = startIndex {
-                print("Force processing remaining buffer after stream completion")
-                let jsonStr = String(self.buffer[startIndexUnwrapped...])
-                if let jsonData = jsonStr.data(using: .utf8) {
-                    do {
-                        if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                           let event = StreamEvent.fromJson(jsonDict) {
-                            callback(event)
-                        } else {
-                            print("Invalid StreamEvent data during forced processing")
-                        }
-                    } catch {
-                        print("Failed to parse JSON in forced buffer processing: \(error)")
-                        DispatchQueue.main.async {
-                            self.delegate?.didEncounterError(error)
-                        }
-                    }
-                }
-                self.buffer.removeAll()  // Clear buffer after final processing
-            }
-
-            // Remove all processed ranges from the buffer after the loop
-            for range in rangesToRemove.reversed() {
-                self.buffer.removeSubrange(range)
-            }
-
-            // Log an error if there are unbalanced braces left after processing
-            if braceCount != 0 && !forceProcess {
-                print("Warning: Unbalanced braces at the end of buffer processing.")
             }
         }
     }
 }
+

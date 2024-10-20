@@ -1,3 +1,5 @@
 {
+	"Test_Password" = "Schiller123!";
+	"Test_Email" = "phillip.loacker@aitronos.com";
 	"Test_Key" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6IjEyIiwiSXNBZG1pbiI6IkZhbHNlIiwibmJmIjoxNzI2NTU1NjA0LCJleHAiOjE3MjkxNDc2MDQsImlhdCI6MTcyNjU1NTYwNH0.LWY8KnNR1k5qe-jtjKdribai58Fo9BqIG7MSTe73huE";
 }

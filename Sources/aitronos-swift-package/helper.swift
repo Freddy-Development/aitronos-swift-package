@@ -196,3 +196,116 @@ public func extractJsonStrings(from buffer: String, using pattern: String) -> [S
     let matches = regex.matches(in: buffer, range: NSRange(buffer.startIndex..., in: buffer))
     return matches.map { (buffer as NSString).substring(with: $0.range) }
 }
+
+// MARK: - HTTPMethod Enum
+public enum HTTPMethod: String {
+    case get = "GET"
+    case post = "POST"
+    case put = "PUT"
+    case delete = "DELETE"
+}
+
+// MARK: - Config Struct
+public struct Config {
+    let baseURL: String
+    let backendKey: String
+}
+// MARK: - FreddyError Enum
+public enum FreddyError: Error {
+    case invalidURL
+    case invalidResponse
+    case httpError(statusCode: Int, description: String)
+    case noData
+    case decodingError(error: Error, data: Data)
+    case networkIssue(description: String)
+}
+
+// MARK: - Perform HTTPS Request Function
+public func performRequest<T: Decodable>(
+    endpoint: String,
+    method: HTTPMethod,
+    config: Config,
+    body: Data? = nil,
+    emptyResponse: Bool = false,
+    decoder: JSONDecoder = JSONDecoder(),
+    completion: @Sendable @escaping (Result<T?, FreddyError>) -> Void
+) {
+    // 1. Construct the URL
+    guard let url = URL(string: config.baseURL + endpoint) else {
+        DispatchQueue.main.async {
+            completion(.failure(.invalidURL))
+        }
+        return
+    }
+
+    // 2. Configure the request
+    var request = URLRequest(url: url)
+    request.httpMethod = method.rawValue
+    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.addValue("Bearer \(config.backendKey)", forHTTPHeaderField: "Authorization")
+
+    if let body = body, [.post, .put].contains(method) {
+        request.httpBody = body
+    }
+
+    // 3. Perform the network request
+    let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        DispatchQueue.main.async {
+            // 4. Handle network errors
+            if let error = error {
+                completion(.failure(.networkIssue(description: error.localizedDescription)))
+                return
+            }
+
+            // 5. Validate the response and status code
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+
+            // 6. Handle non-successful HTTP status codes
+            guard (200...299).contains(httpResponse.statusCode) else {
+                if let data = data {
+                    // Try to extract error details from response
+                    if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                       let dictionary = jsonObject as? [String: Any],
+                       let errorDescription = dictionary["error"] as? String {
+                        let detailedError = FreddyError.httpError(statusCode: httpResponse.statusCode, description: errorDescription)
+                        completion(.failure(detailedError))
+                    } else {
+                        let genericError = FreddyError.httpError(statusCode: httpResponse.statusCode, description: "Unknown Error")
+                        completion(.failure(genericError))
+                    }
+                } else {
+                    completion(.failure(.noData))
+                }
+                return
+            }
+
+            // 7. Handle empty responses
+            if emptyResponse {
+                completion(.success(nil))
+                return
+            }
+
+            // 8. Ensure there is data to decode
+            guard let data = data else {
+                completion(.failure(.noData))
+                return
+            }
+
+            // 9. Attempt to decode the response
+            do {
+                let decodedResponse = try decoder.decode(T.self, from: data)
+                completion(.success(decodedResponse))
+            } catch {
+                completion(.failure(.decodingError(error: error, data: data)))
+            }
+        }
+    }
+    task.resume()
+}
+
+// MARK: - EmptyResponse Struct
+/// A placeholder structure for handling empty responses from the server.
+struct EmptyResponse: Decodable {}
