@@ -14,7 +14,7 @@ public final class AppHive {
             }
         }
     }
-    public init (apiKey: String) {
-        self.userToken = apiKey
+    public init (userToken: String) {
+        self.userToken = userToken
     }
 }

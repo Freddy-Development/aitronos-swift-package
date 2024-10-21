@@ -12,10 +12,10 @@ public protocol StreamEventDelegate: AnyObject {
     func didEncounterError(_ error: Error)
 }
 
-extension FreddyApi {
-    public final class AssistantMessaging: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+public extension FreddyApi {
+    final class AssistantMessaging: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         private let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
-        private let token: String
+        private let userToken: String
         private let baseUrl: String
         private var session: URLSession!
         private let bufferQueue = DispatchQueue(label: "com.aitronos.bufferQueue", qos: .utility)
@@ -24,11 +24,11 @@ extension FreddyApi {
         
         public weak var delegate: StreamEventDelegate?
 
-        public init(token: String) {
+        public init(userToken: String) {
             guard let url = baseUrls["v1"] else {
                 fatalError("Unsupported API version")
             }
-            self.token = token
+            self.userToken = userToken
             self.baseUrl = url
             super.init()
             self.session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
@@ -39,7 +39,7 @@ extension FreddyApi {
             let url = URL(string: "\(self.baseUrl)/messages/run-stream")!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
-            request.setValue("Bearer \(self.token)", forHTTPHeaderField: "Authorization")
+            request.setValue("Bearer \(self.userToken)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
             let payloadDict = payload.toDict()

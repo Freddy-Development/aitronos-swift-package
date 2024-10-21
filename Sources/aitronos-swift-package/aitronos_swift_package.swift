@@ -12,12 +12,15 @@ import Foundation
 
 public class Aitronos: @unchecked Sendable {
     public var appHive: AppHive {
-        AppHive(apiKey: userApiKey)
+        AppHive(userToken: userToken)
     }
     public var freddyApi: FreddyApi {
-        FreddyApi()
+        FreddyApi(userToken: userToken)
     }
-    public var userApiKey = ""
+    public var assistantMessaging: FreddyApi.AssistantMessaging {
+        FreddyApi.AssistantMessaging(userToken: userToken)
+    }
+    public var userToken = ""
 
     public init(username: String? = nil, password: String? = nil, apiKey: String? = nil) {
         // Ensure either both username and password are provided or an API key is provided
@@ -27,7 +30,7 @@ public class Aitronos: @unchecked Sendable {
 
         if let apiKey = apiKey {
             // Use provided API key
-            userApiKey = apiKey
+            userToken = apiKey
         } else if let username = username, let password = password {
             // If no API key, login using username and password
             AppHive.login(usernmeEmail: username, password: password) { [weak self] result in
@@ -38,8 +41,8 @@ public class Aitronos: @unchecked Sendable {
                 switch result {
                 case .success(let response):
                     // Store the token on success
-                    strongSelf.userApiKey = response.token
-                    print("Successfully logged in. API Key: \(strongSelf.userApiKey)")
+                    strongSelf.userToken = response.token
+                    print("Successfully logged in. API Key: \(strongSelf.userToken)")
                     
                 case .failure(let error):
                     // Handle login failure
