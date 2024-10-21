@@ -23,8 +23,8 @@ final class aitronos_swift_packageTests: XCTestCase {
         
         // 4. Simulate an asynchronous delay to ensure the login completes
         DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) {
-            if !api.userApiKey.isEmpty {
-                print("API Key after login: \(api.userApiKey)")
+            if !api.userToken.isEmpty {
+                print("API Key after login: \(api.userToken)")
                 expectation.fulfill()  // Fulfill the expectation if the API key is set
             } else {
                 XCTFail("Login failed or API key is not set.")

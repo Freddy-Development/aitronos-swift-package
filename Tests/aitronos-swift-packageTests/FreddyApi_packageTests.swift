@@ -25,7 +25,7 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         print("Token retrieved: \(token)")
         
         // Initialize the API with the token
-        let api = FreddyApi.AssistantMessaging(token: token)
+        let api = Aitronos(apiKey: token).assistantMessaging
         
         // Define the payload for the stream request
         let payload = MessageRequestPayload(
