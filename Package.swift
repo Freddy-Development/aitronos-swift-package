@@ -17,7 +17,7 @@ let package = Package(
         .target(
             name: "aitronos"),
         .testTarget(
-            name: "aitronos",
+            name: "aitronosTests", 
             dependencies: ["aitronos"],
             resources: [
                 .process("Config.plist")
