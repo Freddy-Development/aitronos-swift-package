@@ -26,8 +26,7 @@ public extension FreddyApi {
             case invalidURL
             case jsonSerializationError(underlying: Error)
             case invalidResponse(statusCode: Int)
-            case jsonParsingError(underlying: Error, jsonString: String)
-            case unbalancedBraces
+            case networkError(underlying: Error)
             case unknownError
 
             public var errorDescription: String? {
@@ -40,10 +39,8 @@ public extension FreddyApi {
                     return "Failed to serialize JSON payload: \(underlying.localizedDescription)"
                 case .invalidResponse(let statusCode):
                     return "Received invalid HTTP response with status code: \(statusCode)"
-                case .jsonParsingError(let underlying, let jsonString):
-                    return "Failed to parse JSON: \(underlying.localizedDescription). JSON String: \(jsonString)"
-                case .unbalancedBraces:
-                    return "Unbalanced braces detected in the incoming data stream."
+                case .networkError(let underlying):
+                    return "Network error occurred: \(underlying.localizedDescription)"
                 case .unknownError:
                     return "An unknown error occurred."
                 }
@@ -105,9 +102,9 @@ public extension FreddyApi {
 
         public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
             guard let chunk = String(data: data, encoding: .utf8) else {
-                DispatchQueue.main.async {
-                    self.delegate?.didEncounterError(AssistantMessagingError.unknownError)
-                }
+                // Non-critical error: Unable to decode data chunk
+                // Optionally log this error
+                print("Received data chunk could not be decoded to UTF-8 string.")
                 return
             }
 
@@ -129,8 +126,9 @@ public extension FreddyApi {
             isCompleted = true
 
             if let error = error {
+                // Critical error: Network issue or request failure
                 DispatchQueue.main.async {
-                    self.delegate?.didEncounterError(error)
+                    self.delegate?.didEncounterError(AssistantMessagingError.networkError(underlying: error))
                 }
             } else {
                 // Validate HTTP response
@@ -178,10 +176,11 @@ public extension FreddyApi {
                     braceCount -= 1
                     if braceCount < 0 {
                         // Unbalanced braces
-                        delegate?.didEncounterError(AssistantMessagingError.unbalancedBraces)
+                        // Critical error: Data stream is malformed
+                        delegate?.didEncounterError(AssistantMessagingError.invalidResponse(statusCode: -1)) // Using -1 to indicate malformed data
                         braceCount = 0
                         startIndex = nil
-                        continue
+                        break
                     }
                 }
 
@@ -194,12 +193,12 @@ public extension FreddyApi {
                                let event = StreamEvent.fromJson(jsonDict) {
                                 callback(event)
                             } else {
-                                let parsingError = AssistantMessagingError.jsonParsingError(underlying: AssistantMessagingError.unknownError, jsonString: jsonStr)
-                                delegate?.didEncounterError(parsingError)
+                                // Non-critical error: Unable to parse individual event
+                                print("Invalid StreamEvent data: \(jsonStr)")
                             }
                         } catch {
-                            let parsingError = AssistantMessagingError.jsonParsingError(underlying: error, jsonString: jsonStr)
-                            delegate?.didEncounterError(parsingError)
+                            // Non-critical error: JSON parsing failed for individual event
+                            print("Failed to parse JSON: \(error.localizedDescription). JSON String: \(jsonStr)")
                         }
                     }
 
@@ -219,12 +218,12 @@ public extension FreddyApi {
                                let event = StreamEvent.fromJson(jsonDict) {
                                 callback(event)
                             } else {
-                                let parsingError = AssistantMessagingError.jsonParsingError(underlying: AssistantMessagingError.unknownError, jsonString: jsonStr)
-                                delegate?.didEncounterError(parsingError)
+                                // Non-critical error: Unable to parse individual event
+                                print("Invalid StreamEvent data during forced processing: \(jsonStr)")
                             }
                         } catch {
-                            let parsingError = AssistantMessagingError.jsonParsingError(underlying: error, jsonString: jsonStr)
-                            delegate?.didEncounterError(parsingError)
+                            // Non-critical error: JSON parsing failed for individual event
+                            print("Failed to parse JSON during forced processing: \(error.localizedDescription). JSON String: \(jsonStr)")
                         }
                     }
                 }
@@ -238,7 +237,9 @@ public extension FreddyApi {
 
             // Log warning for unbalanced braces if not forcing processing
             if braceCount != 0 && !forceProcess {
-                delegate?.didEncounterError(AssistantMessagingError.unbalancedBraces)
+                print("Warning: Unbalanced braces detected in the data stream.")
+                // Decide whether to report this as a critical error or handle it silently
+                // For this example, we're choosing not to report it to the delegate
             }
         }
     }
