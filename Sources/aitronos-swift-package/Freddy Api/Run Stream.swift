@@ -27,7 +27,7 @@ public extension FreddyApi {
             case jsonSerializationError(underlying: Error)
             case invalidResponse(statusCode: Int)
             case networkError(underlying: Error)
-            case unknownError
+            case malformedDataStream
 
             public var errorDescription: String? {
                 switch self {
@@ -41,8 +41,8 @@ public extension FreddyApi {
                     return "Received invalid HTTP response with status code: \(statusCode)"
                 case .networkError(let underlying):
                     return "Network error occurred: \(underlying.localizedDescription)"
-                case .unknownError:
-                    return "An unknown error occurred."
+                case .malformedDataStream:
+                    return "Malformed data stream detected."
                 }
             }
         }
@@ -158,29 +158,49 @@ public extension FreddyApi {
         /// Processes the buffer to extract complete JSON objects.
         /// - Parameters:
         ///   - forceProcess: Whether to force processing the remaining buffer regardless of brace balance.
-        ///   - callback: A closure to handle the extracted `StreamEvent`.
-        private func processBuffer(forceProcess: Bool = false, callback: @escaping (StreamEvent?) -> Void) {
+        ///   - callback: A `@Sendable` closure to handle the extracted `StreamEvent`.
+        private func processBuffer(forceProcess: Bool = false, callback: @Sendable @escaping (StreamEvent?) -> Void) {
             var braceCount = 0
+            var insideString = false
+            var escapeCharacter = false
             var startIndex: String.Index? = nil
             var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
 
             for currentIndex in buffer.indices {
                 let char = buffer[currentIndex]
 
-                if char == "{" {
-                    braceCount += 1
-                    if startIndex == nil {
-                        startIndex = currentIndex
-                    }
-                } else if char == "}" {
-                    braceCount -= 1
-                    if braceCount < 0 {
-                        // Unbalanced braces
-                        // Critical error: Data stream is malformed
-                        delegate?.didEncounterError(AssistantMessagingError.invalidResponse(statusCode: -1)) // Using -1 to indicate malformed data
-                        braceCount = 0
-                        startIndex = nil
-                        break
+                if escapeCharacter {
+                    escapeCharacter = false
+                    continue
+                }
+
+                if char == "\\" {
+                    escapeCharacter = true
+                    continue
+                }
+
+                if char == "\"" {
+                    insideString.toggle()
+                    continue
+                }
+
+                if !insideString {
+                    if char == "{" {
+                        braceCount += 1
+                        if startIndex == nil {
+                            startIndex = currentIndex
+                        }
+                    } else if char == "}" {
+                        braceCount -= 1
+                        if braceCount < 0 {
+                            // Unbalanced braces
+                            DispatchQueue.main.async {
+                                self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
+                            }
+                            braceCount = 0
+                            startIndex = nil
+                            break
+                        }
                     }
                 }
 
@@ -208,7 +228,7 @@ public extension FreddyApi {
                 }
             }
 
-            // Force process buffer if braces are unbalanced and stream has completed
+            // Force process buffer if stream has completed
             if forceProcess, let start = startIndex {
                 let jsonStr = String(buffer[start...])
                 if !jsonStr.isEmpty {
@@ -235,11 +255,13 @@ public extension FreddyApi {
                 buffer.removeSubrange(range)
             }
 
-            // Log warning for unbalanced braces if not forcing processing
-            if braceCount != 0 && !forceProcess {
-                print("Warning: Unbalanced braces detected in the data stream.")
-                // Decide whether to report this as a critical error or handle it silently
-                // For this example, we're choosing not to report it to the delegate
+            // Handle unbalanced braces if not forcing processing
+            if braceCount != 0 && !forceProcess && startIndex != nil {
+                // Malformed data stream
+                DispatchQueue.main.async {
+                    self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
+                }
+                buffer.removeAll()
             }
         }
     }
