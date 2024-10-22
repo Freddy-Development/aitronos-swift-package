@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import aitronos_swift_package
+@testable import aitronos
 
 final class AuthenticationTests: XCTestCase {
 
