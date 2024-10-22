@@ -162,111 +162,109 @@ public extension FreddyApi {
         ///   - forceProcess: Whether to force processing the remaining buffer regardless of brace balance.
         ///   - callback: A closure to handle the extracted `StreamEvent`.
         private func processBuffer(forceProcess: Bool = false, callback: @escaping (StreamEvent?) -> Void) {
-            // Process on bufferQueue to ensure thread safety
-            bufferQueue.async { [weak self] in
-                guard let self = self else { return }
-                var braceCount = 0
-                var insideString = false
-                var escapeCharacter = false
-                var startIndex: String.Index? = nil
-                var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
+            var braceCount = 0
+            var insideString = false
+            var escapeCharacter = false
+            var startIndex: String.Index? = nil
+            var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
+            
+            for currentIndex in buffer.indices {
+                let char = buffer[currentIndex]
                 
-                for currentIndex in self.buffer.indices {
-                    let char = self.buffer[currentIndex]
-                    
-                    if escapeCharacter {
-                        escapeCharacter = false
-                        continue
+                if escapeCharacter {
+                    escapeCharacter = false
+                    continue
+                }
+                
+                if char == "\\" {
+                    escapeCharacter = true
+                    continue
+                }
+                
+                if char == "\"" {
+                    insideString.toggle()
+                    continue
+                }
+                
+                if !insideString {
+                    if char == "{" {
+                        braceCount += 1
+                        if startIndex == nil {
+                            startIndex = currentIndex
+                        }
+                    } else if char == "}" {
+                        braceCount -= 1
+                        if braceCount < 0 {
+                            // Unbalanced braces detected
+                            print("Unbalanced braces detected!")
+                            braceCount = 0
+                            startIndex = nil
+                            self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
+                            break
+                        }
                     }
+                }
+                
+                // Process complete JSON objects or force process remaining buffer on stream completion
+                if braceCount == 0, let start = startIndex {
+                    let jsonStr = String(buffer[start...currentIndex])
                     
-                    if char == "\\" {
-                        escapeCharacter = true
-                        continue
-                    }
-                    
-                    if char == "\"" {
-                        insideString.toggle()
-                        continue
-                    }
-                    
-                    if !insideString {
-                        if char == "{" {
-                            braceCount += 1
-                            if startIndex == nil {
-                                startIndex = currentIndex
+                    if let jsonData = jsonStr.data(using: .utf8) {
+                        do {
+                            if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                               let event = StreamEvent.fromJson(jsonDict) {
+                                callback(event)
+                            } else {
+                                // Non-critical error: Unable to parse individual event
+                                print("Invalid StreamEvent data: \(jsonStr)")
                             }
-                        } else if char == "}" {
-                            braceCount -= 1
-                            if braceCount < 0 {
-                                // Unbalanced braces detected
-                                print("Unbalanced braces detected!")
-                                braceCount = 0
-                                startIndex = nil
-                                self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
-                                break
-                            }
+                        } catch {
+                            // Non-critical error: JSON parsing failed for individual event
+                            print("Failed to parse JSON: \(error.localizedDescription). JSON String: \(jsonStr)")
                         }
                     }
                     
-                    // Process complete JSON objects or force process remaining buffer on stream completion
-                    if braceCount == 0, let start = startIndex {
-                        let jsonStr = String(self.buffer[start...currentIndex])
-                        
-                        if let jsonData = jsonStr.data(using: .utf8) {
-                            do {
-                                if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                                   let event = StreamEvent.fromJson(jsonDict) {
-                                    callback(event)
-                                } else {
-                                    // Non-critical error: Unable to parse individual event
-                                    print("Invalid StreamEvent data: \(jsonStr)")
-                                }
-                            } catch {
-                                // Non-critical error: JSON parsing failed for individual event
-                                print("Failed to parse JSON: \(error.localizedDescription). JSON String: \(jsonStr)")
-                            }
-                        }
-                        
-                        // Track the range of the buffer that was processed to remove it later
-                        let endIndex = self.buffer.index(after: currentIndex)
-                        rangesToRemove.append(start..<endIndex)
-                        startIndex = nil
-                    }
+                    // Track the range of the buffer that was processed to remove it later
+                    let endIndex = buffer.index(after: currentIndex)
+                    rangesToRemove.append(start..<endIndex)
+                    startIndex = nil
                 }
-                
-                // Force process buffer if stream has completed
-                if forceProcess, let start = startIndex {
-                    let jsonStr = String(self.buffer[start...])
-                    if !jsonStr.isEmpty {
-                        if let jsonData = jsonStr.data(using: .utf8) {
-                            do {
-                                if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                                   let event = StreamEvent.fromJson(jsonDict) {
-                                    callback(event)
-                                } else {
-                                    // Non-critical error: Unable to parse individual event
-                                    print("Invalid StreamEvent data during forced processing: \(jsonStr)")
-                                }
-                            } catch {
-                                // Non-critical error: JSON parsing failed for individual event
-                                print("Failed to parse JSON during forced processing: \(error.localizedDescription). JSON String: \(jsonStr)")
+            }
+            
+            // Force process buffer if stream has completed
+            if forceProcess, let start = startIndex {
+                print("Force processing remaining buffer after stream completion")
+                let jsonStr = String(buffer[start...])
+                if !jsonStr.isEmpty {
+                    if let jsonData = jsonStr.data(using: .utf8) {
+                        do {
+                            if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                               let event = StreamEvent.fromJson(jsonDict) {
+                                callback(event)
+                            } else {
+                                // Non-critical error: Unable to parse individual event
+                                print("Invalid StreamEvent data during forced processing: \(jsonStr)")
                             }
+                        } catch {
+                            // Non-critical error: JSON parsing failed for individual event
+                            print("Failed to parse JSON during forced processing: \(error.localizedDescription). JSON String: \(jsonStr)")
+                            self.delegate?.didEncounterError(error)
                         }
                     }
-                    self.buffer.removeAll()
                 }
-                
-                // Remove all processed ranges from the buffer after the loop
-                for range in rangesToRemove.reversed() {
-                    self.buffer.removeSubrange(range)
-                }
-                
-                // Handle unbalanced braces if not forcing processing
-                if braceCount != 0 && !forceProcess && startIndex != nil {
-                    // Malformed data stream
-                    self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
-                    self.buffer.removeAll()
-                }
+                buffer.removeAll()
+            }
+            
+            // Remove all processed ranges from the buffer after the loop
+            for range in rangesToRemove.reversed() {
+                buffer.removeSubrange(range)
+            }
+            
+            // Handle unbalanced braces if not forcing processing
+            if braceCount != 0 && !forceProcess && startIndex != nil {
+                // Malformed data stream
+                self.delegate?.didEncounterError(AssistantMessagingError.malformedDataStream)
+                buffer.removeAll()
             }
         }
     }
