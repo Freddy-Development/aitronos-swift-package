@@ -12,8 +12,8 @@ public protocol StreamEventDelegate: AnyObject {
 }
 extension FreddyApi {
     public final class AssistantMessaging: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+        private var userToken: String
         private let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
-        private let token: String
         private let baseUrl: String
         private var session: URLSession!
         private let bufferQueue = DispatchQueue(label: "com.aitronos.bufferQueue", qos: .utility)
@@ -21,21 +21,22 @@ extension FreddyApi {
         private var isCompleted = false  // Track whether stream has completed
         
         public weak var delegate: StreamEventDelegate?
-        public init(token: String) {
+        public init(userToken: String) {
             guard let url = baseUrls["v1"] else {
                 fatalError("Unsupported API version")
             }
-            self.token = token
+            self.userToken = userToken
             self.baseUrl = url
             super.init()
             self.session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         }
+        
         public func createStream(payload: MessageRequestPayload, delegate: StreamEventDelegate) {
             self.delegate = delegate
             let url = URL(string: "\(self.baseUrl)/messages/run-stream")!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
-            request.setValue("Bearer \(self.token)", forHTTPHeaderField: "Authorization")
+            request.setValue("Bearer \(self.userToken)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let payloadDict = payload.toDict()
             do {
@@ -48,6 +49,7 @@ extension FreddyApi {
             let task = session.dataTask(with: request)
             task.resume()
         }
+        
         public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
             if let chunk = String(data: data, encoding: .utf8) {
                 bufferQueue.async {
@@ -64,6 +66,7 @@ extension FreddyApi {
                 }
             }
         }
+        
         public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
             if isCompleted { return }
             isCompleted = true
