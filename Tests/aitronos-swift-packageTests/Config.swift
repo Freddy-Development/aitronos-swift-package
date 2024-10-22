@@ -13,9 +13,13 @@ public struct Config {
             fatalError("Couldn't find file 'Config.plist' in the package bundle.")
         }
         
+        print("Successfully found Config.plist at URL: \(fileUrl)")
+        
         guard let plist = NSDictionary(contentsOf: fileUrl) else {
-            fatalError("Couldn't load contents of 'Config.plist'.")
+            fatalError("Couldn't load contents of 'Config.plist'. Please check the file structure.")
         }
+        
+        print("Successfully loaded Config.plist contents.")
         
         return plist
     }
@@ -25,7 +29,7 @@ public struct Config {
             let plist = getFile()
             
             guard let value = plist.object(forKey: "Test_Key") as? String else {
-                fatalError("Couldn't find key 'Test_Key' in 'Config.plist'.")
+                fatalError("Couldn't find key 'Test_Key' in 'Config.plist'. Please check the spelling of the key.")
             }
 
             return value
@@ -36,7 +40,7 @@ public struct Config {
             let plist = getFile()
             
             guard let value = plist.object(forKey: "Test_Email") as? String else {
-                fatalError("Couldn't find key 'Test_Email' in 'Config.plist'.")
+                fatalError("Couldn't find key 'Test_Email' in 'Config.plist'. Please check the spelling of the key.")
             }
             
             return value
@@ -47,7 +51,7 @@ public struct Config {
             let plist = getFile()
             
             guard let value = plist.object(forKey: "Test_Password") as? String else {
-                fatalError("Couldn't find key 'Test_Password' in 'Config.plist'.")
+                fatalError("Couldn't find key 'Test_Password' in 'Config.plist'. Please check the spelling of the key.")
             }
             
             return value
