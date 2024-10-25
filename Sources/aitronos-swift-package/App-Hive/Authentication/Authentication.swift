@@ -66,6 +66,7 @@ public extension AppHive {
         guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
             DispatchQueue.main.async {
                 closure(.failure(.networkIssue(description: "Failed to serialize request body")))
+
             }
             return
         }
@@ -92,7 +93,19 @@ public extension AppHive {
                 }
                 
             case .failure(let error):
-                closure(.failure(error)) // Pass the error to the caller
+                // Custom error handling for 404 and 401 errors
+                if case let .httpError(statusCode, description) = error {
+                    switch statusCode {
+                    case 404 where description.contains("User name not found"):
+                        closure(.failure(.noUserFound))
+                    case 401 where description.contains("Incorrect password"):
+                        closure(.failure(.incorrectPassword))
+                    default:
+                        closure(.failure(error)) // Handle other HTTP errors
+                    }
+                } else {
+                    closure(.failure(error)) // Handle other types of errors
+                }
             }
         }
     }
