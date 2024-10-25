@@ -19,17 +19,22 @@ final class aitronos_swift_packageTests: XCTestCase {
         let expectation = expectation(description: "Login completes and API key is set.")
         
         // 3. Initialize Aitronos with username and password
-        let api = Aitronos(username: email, password: password)
+        do {
+            let api = try await Aitronos(username: email, password: password)
+            
+        } catch {
+            XCTFail("Login failed with error: \(error)")
+        }
         
         // 4. Simulate an asynchronous delay to ensure the login completes
-        DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) {
-            if !api.userToken.isEmpty {
-                print("API Key after login: \(api.userToken)")
-                expectation.fulfill()  // Fulfill the expectation if the API key is set
-            } else {
-                XCTFail("Login failed or API key is not set.")
-            }
-        }
+//        DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) {
+//            if !api.userToken.isEmpty {
+//                print("API Key after login: \(api.userToken)")
+//                expectation.fulfill()  // Fulfill the expectation if the API key is set
+//            } else {
+//                XCTFail("Login failed or API key is not set.")
+//            }
+//        }
         
         // 5. Wait for the expectation to be fulfilled
         await fulfillment(of: [expectation], timeout: 10.0)
