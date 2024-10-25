@@ -218,6 +218,9 @@ public enum FreddyError: Error {
     case noData
     case decodingError(error: Error, data: Data)
     case networkIssue(description: String)
+    case noUserFound
+    case incorrectPassword
+    case invalidCredentials
 }
 
 // MARK: - Perform HTTPS Request Function
