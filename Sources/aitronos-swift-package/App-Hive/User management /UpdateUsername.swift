@@ -12,8 +12,8 @@ public extension AppHive {
     // MARK: - UpdateUsernameRequest Struct
     /// The structure representing the request body for updating a user's username.
     struct UpdateUsernameRequest: Encodable {
-        let userId: Int
-        let userName: String
+        public let userId: Int
+        public let userName: String
     }
 
     // MARK: - Update Username Function
