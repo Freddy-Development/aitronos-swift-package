@@ -11,20 +11,21 @@ public extension AppHive {
     // MARK: - LoginResponse Struct
     /// Represents the response received after a successful login.
     struct LoginResponse: Decodable, Sendable {
-        let token: String
-        let refreshToken: RefreshToken
-        let deviceId: String
+        public let token: String
+        public let refreshToken: RefreshToken
+        public let deviceId: String
         
-        struct RefreshToken: Decodable, Sendable {
-            let token: String
-            let expiry: String
+        // RefreshToken Struct inside LoginResponse
+        public struct RefreshToken: Decodable, Sendable {
+            public let token: String
+            public let expiry: String
         }
     }
     
     // MARK: - LoginError Struct
     /// Represents an error received during the login process.
     struct LoginError: Decodable, Error, Sendable {
-        let message: String
+        public let message: String
     }
     
     // MARK: - Login Function
