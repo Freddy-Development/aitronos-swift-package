@@ -12,19 +12,19 @@ public extension AppHive {
     // MARK: - RegisterUserRequest Struct
     /// The structure representing the request body for registering a new user.
     struct RegisterUserRequest: Encodable {
-        let email: String
-        let password: String
-        let fullName: String
+        public  let email: String
+        public  let password: String
+        public  let fullName: String
     }
     
     // MARK: - RegisterUserResponse Struct
     /// The structure representing the response from the register user API.
     struct RegisterUserResponse: Decodable {
-        let verificationResponse: VerificationResponse
+        public let verificationResponse: VerificationResponse
         
-        struct VerificationResponse: Decodable {
-            let userId: Int
-            let emailKey: String
+        public struct VerificationResponse: Decodable {
+            public let userId: Int
+            public let emailKey: String
         }
     }
 

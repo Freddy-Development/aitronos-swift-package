@@ -12,34 +12,34 @@ public extension AppHive {
     // MARK: - Address Struct
     /// The structure representing the user's address in the profile.
     struct Address: Encodable {
-        let fullName: String
-        let street: String
-        let postCode: String
-        let city: String
-        let country: Int
-        let phoneNumber: String
+        public let fullName: String
+        public let street: String
+        public let postCode: String
+        public let city: String
+        public let country: Int
+        public let phoneNumber: String
     }
 
     // MARK: - ProfileImage Struct
     /// The structure representing the user's profile image.
     struct ProfileImage: Encodable {
-        let background: String
-        let image: String
+        public let background: String
+        public let image: String
     }
 
     // MARK: - UpdateUserProfileRequest Struct
     /// The structure representing the request body for updating the user's profile.
     struct UpdateUserProfileRequest: Encodable {
-        let fullName: String
-        let lastName: String
-        let userName: String
-        let email: String
-        let address: Address
-        let profileImage: ProfileImage
-        let birthday: String
-        let gender: Int
-        let country: Int
-        let password: String
+        public let fullName: String
+        public let lastName: String
+        public let userName: String
+        public let email: String
+        public let address: Address
+        public let profileImage: ProfileImage
+        public let birthday: String
+        public let gender: Int
+        public let country: Int
+        public let password: String
     }
 
     // MARK: - Update User Profile Function

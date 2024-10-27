@@ -12,8 +12,8 @@ public extension AppHive {
     // MARK: - CheckUsernameRequest Struct
     /// The structure representing the request body for checking if a username is taken.
     struct CheckUsernameRequest: Encodable {
-        let userId: Int
-        let userName: String
+        public let userId: Int
+        public let userName: String
     }
 
     // MARK: - Check Username Duplication Function
