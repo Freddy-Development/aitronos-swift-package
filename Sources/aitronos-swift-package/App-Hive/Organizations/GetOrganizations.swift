@@ -12,10 +12,10 @@ public extension AppHive {
     // MARK: - Organization Struct
     /// The structure representing an organization.
     struct Organization: Decodable {
-        let id: Int
-        let key: String
-        let name: String
-        let authKey: String
+        public let id: Int
+        public let key: String
+        public let name: String
+        public let authKey: String
     }
 
     // MARK: - Get Organizations Function
