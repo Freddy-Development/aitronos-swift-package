@@ -12,14 +12,14 @@ public extension AppHive {
     // MARK: - DetailedUserProfileResponse Struct
     /// The structure representing the detailed profile information of the user.
     struct DetailedUserProfileResponse: Decodable {
-        let userId: Int
-        let birthday: String
-        let country: String
-        let profileImage: String
-        let timezone: String
-        let fullName: String
-        let userName: String
-        let email: String
+        public let userId: Int
+        public let birthday: String
+        public let country: String
+        public let profileImage: String
+        public let timezone: String
+        public let fullName: String
+        public let userName: String
+        public let email: String
     }
 
     // MARK: - Get Detailed User Profile Function

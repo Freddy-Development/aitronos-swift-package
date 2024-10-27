@@ -12,9 +12,9 @@ public extension AppHive {
     // MARK: - BasicUserProfileResponse Struct
     /// The structure representing the basic profile information of the user.
     struct BasicUserProfileResponse: Decodable {
-        let fullName: String
-        let userName: String
-        let email: String
+        public let fullName: String
+        public let userName: String
+        public let email: String
     }
 
     // MARK: - Get Basic User Profile Function
