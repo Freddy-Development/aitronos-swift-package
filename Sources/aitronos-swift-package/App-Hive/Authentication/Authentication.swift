@@ -1,4 +1,3 @@
-//
 //  Authentication.swift
 //  aitronos-swift-package
 //
@@ -66,7 +65,6 @@ public extension AppHive {
         guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
             DispatchQueue.main.async {
                 closure(.failure(.networkIssue(description: "Failed to serialize request body")))
-
             }
             return
         }
@@ -96,9 +94,9 @@ public extension AppHive {
                 // Custom error handling for 404 and 401 errors
                 if case let .httpError(statusCode, description) = error {
                     switch statusCode {
-                    case 404 where description.contains("User name not found"):
+                    case 404:
                         closure(.failure(.noUserFound))
-                    case 401 where description.contains("Incorrect password"):
+                    case 401:
                         closure(.failure(.incorrectPassword))
                     default:
                         closure(.failure(error)) // Handle other HTTP errors
