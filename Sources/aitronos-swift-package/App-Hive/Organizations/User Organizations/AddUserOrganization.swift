@@ -14,12 +14,12 @@ public extension AppHive {
     ///
     /// This request requires the `organizationId`, `organizationName`, `description`, and the `isUserJoined` flag.
     struct AddUserOrganizationRequest: Encodable {
-        let organizationId: Int
-        let organizationName: String
-        let description: String
-        let isUserJoined: Bool
+        public let organizationId: Int
+        public let organizationName: String
+        public let description: String
+        public let isUserJoined: Bool
         
-        enum CodingKeys: String, CodingKey {
+        public enum CodingKeys: String, CodingKey {
             case organizationId = "organizationId"
             case organizationName = "organizationName"
             case description = "description"
