@@ -8,3 +8,5 @@ DerivedData/
 .netrc
 Tests/Secrets.json
 Tests/aitronos-swift-packageTests/Config.json
+
+Tests/aitronos-swift-packageTests/Config.plist
