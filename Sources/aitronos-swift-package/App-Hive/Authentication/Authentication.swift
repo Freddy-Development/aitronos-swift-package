@@ -94,6 +94,7 @@ public extension AppHive {
             case .failure(let error):
                 // Custom error handling for 404 and 401 errors
                 if case let .httpError(statusCode, description) = error {
+                    print("HTTP Error \(statusCode): \(description)")
                     switch statusCode {
                     case 404:
                         closure(.failure(.noUserFound))
@@ -104,6 +105,22 @@ public extension AppHive {
                     }
                 } else {
                     closure(.failure(error)) // Handle other types of errors
+                }
+            }
+        }
+    }
+}
+
+extension AppHive {
+    @available(macOS 10.15, *)
+    static func login(usernmeEmail: String, password: String) async throws -> LoginResponse {
+        try await withCheckedThrowingContinuation { continuation in
+            login(usernmeEmail: usernmeEmail, password: password) { result in
+                switch result {
+                case .success(let loginResponse):
+                    continuation.resume(returning: loginResponse)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
                 }
             }
         }

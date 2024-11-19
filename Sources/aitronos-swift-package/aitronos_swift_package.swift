@@ -1,15 +1,3 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
-
-//
-//  aitronos_swift_package.swift
-//  aitronos-swift-package
-//
-//  Created by Phillip Loacker on 24.09.2024.
-//
-
-import Foundation
-
 public class Aitronos: @unchecked Sendable {
     public var appHive: AppHive {
         AppHive(userToken: userToken)
@@ -25,8 +13,17 @@ public class Aitronos: @unchecked Sendable {
     
     public private(set) var userToken = ""
 
-    // MARK: - Synchronous Init for older versions
     public init(apiKey: String) {
         self.userToken = apiKey
+    }
+
+    @available(macOS 10.15, *)
+    public init(usernmeEmail: String, password: String) async throws {
+        do {
+            let loginResponse = try await AppHive.login(usernmeEmail: usernmeEmail, password: password)
+            self.userToken = loginResponse.token
+        } catch {
+            throw error
+        }
     }
 }
