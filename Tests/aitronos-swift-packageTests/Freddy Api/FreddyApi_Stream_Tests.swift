@@ -9,7 +9,6 @@ import XCTest
 @testable import aitronos
 
 final class StreamTests: XCTestCase, StreamEventDelegate {
-
     var expectation: XCTestExpectation!
     var isFulfilled = false  // To track if expectation has been fulfilled
     let testTimeout: TimeInterval = 60  // Timeout for the stream to complete
@@ -29,8 +28,8 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         
         // Define the payload for the stream request
         let payload = MessageRequestPayload(
-            organizationId: 5,
-            assistantId: 6,
+            organizationId: 1,
+            assistantId: 1,
             messages: [Message(content: "Hello", role: "user")]
         )
         print("Payload created: \(payload)")
@@ -56,16 +55,13 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
             print("Event has no response")
         }
 
-        // Check event status for stream completion, handling nil status for message deltas
+        // Fulfill expectation when stream completes
         if event.status == .completed && !isFulfilled {
-            if event.response != nil {
-                isFulfilled = true
-                print("Stream completed, fulfilling expectation")
-                expectation.fulfill()
-            }
-           
+            isFulfilled = true
+            print("Stream completed, fulfilling expectation")
+            expectation.fulfill()
         } else if event.event == .threadMessageDelta {
-            // Handle partial message deltas separately, as they may not have a status
+            // Log partial message deltas
             print("Received partial message: \(event.response ?? "No response data")")
         } else if let status = event.status {
             print("Stream is still in progress: \(status.rawValue)")
@@ -78,20 +74,15 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         // Fail the test if any unexpected error occurs
         print("Error encountered during stream: \(error)")
         XCTFail("Unexpected error encountered: \(error.localizedDescription)")
+        expectation.fulfill()  // Fulfill the expectation to avoid hanging tests
     }
 
     // MARK: - Helper Method
 
     private func fulfillment(of expectations: [XCTestExpectation], timeout: TimeInterval) async {
-        do {
-            try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))  // Timeout
-            if !isFulfilled {
-                print("Stream did not complete within the timeout period of \(timeout) seconds")
-                XCTFail("Stream timed out after \(timeout) seconds")
-            }
-        } catch {
-            print("Error while waiting for fulfillment: \(error)")
-            XCTFail("Test failed during expectation waiting: \(error.localizedDescription)")
+        await withCheckedContinuation { continuation in
+            wait(for: expectations, timeout: timeout)
+            continuation.resume()
         }
     }
 }

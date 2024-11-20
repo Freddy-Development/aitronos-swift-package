@@ -65,10 +65,10 @@ public extension AppHive {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         
         // 4. Create request configuration
-        let config = Config(baseURL: "https://freddy-core-api.azurewebsites.net", backendKey: token)
+        let config = Config(baseUrl: "https://freddy-core-api.azurewebsites.net", backendKey: token)
         
         // 5. Create a custom request and add multipart headers
-        var request = URLRequest(url: URL(string: config.baseURL + endpoint)!)
+        var request = URLRequest(url: URL(string: config.baseUrl + endpoint)!)
         request.httpMethod = HTTPMethod.post.rawValue
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
