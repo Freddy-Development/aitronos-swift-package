@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  RunStream.swift
 //  aitronos-swift-package
 //
 //  Created by Phillip Loacker on 19.10.2024.
@@ -12,21 +12,17 @@ public protocol StreamEventDelegate: AnyObject {
 }
 extension FreddyApi {
     public final class AssistantMessaging: NSObject, URLSessionDataDelegate, @unchecked Sendable {
-        private var userToken: String
-        private let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
-        private let baseUrl: String
+        public var userToken: String
         private var session: URLSession!
         private let bufferQueue = DispatchQueue(label: "com.aitronos.bufferQueue", qos: .utility)
         private var buffer = ""  // Mutable buffer to accumulate data
         private var isCompleted = false  // Track whether stream has completed
+        public let baseUrl: String
         
         public weak var delegate: StreamEventDelegate?
-        public init(userToken: String) {
-            guard let url = baseUrls["v1"] else {
-                fatalError("Unsupported API version")
-            }
+        public init(userToken: String, baseUrl: String) {
             self.userToken = userToken
-            self.baseUrl = url
+            self.baseUrl = baseUrl
             super.init()
             self.session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
         }

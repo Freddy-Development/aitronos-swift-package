@@ -48,7 +48,7 @@ public extension AppHive {
         let endpoint = "/v1/user/profile"
         
         // 2. Create config with Bearer token
-        let config = Config(baseURL: baseURL, backendKey: userToken)
+        let config = Config(baseUrl: baseUrl, backendKey: userToken)
         
         // 3. Perform the GET request using the helper function `performRequest`
         performRequest(
