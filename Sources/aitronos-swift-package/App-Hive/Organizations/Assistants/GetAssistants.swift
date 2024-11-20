@@ -38,7 +38,7 @@ public extension AppHive {
     ///   }
     ///   ```
     func getAssistants(
-        organizationID: String,
+        organizationID: Int,
         closure: @escaping @Sendable (Result<[Assistant], FreddyError>) -> Void
     ) {
         // 1. API Endpoint with the organization ID path parameter
