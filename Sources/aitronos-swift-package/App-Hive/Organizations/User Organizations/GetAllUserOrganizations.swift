@@ -12,10 +12,10 @@ public extension AppHive {
     // MARK: - UserOrganization Struct
     /// The structure representing an organization and whether the user has joined it.
     struct UserOrganization: Decodable {
-        let organizationId: Int
-        let organizationName: String
-        let description: String
-        let isUserJoined: Bool
+        public let organizationId: Int
+        public let organizationName: String
+        public let description: String
+        public let isUserJoined: Bool
         
         enum CodingKeys: String, CodingKey {
             case organizationId = "OrganizationId"
