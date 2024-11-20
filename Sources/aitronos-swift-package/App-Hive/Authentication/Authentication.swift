@@ -71,7 +71,7 @@ public extension AppHive {
         }
         
         // 3. Config without authorization (since this is the login endpoint)
-        let config = Config(baseURL: "https://freddy-api.aitronos.com", backendKey: "")
+        let config = Config(baseUrl: "https://freddy-api.aitronos.com", backendKey: "")
         
         // 4. Perform the request using the helper function `performRequest`
         performRequest(

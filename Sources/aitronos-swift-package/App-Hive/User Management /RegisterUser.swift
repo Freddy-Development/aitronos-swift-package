@@ -76,7 +76,7 @@ public extension AppHive {
         }
         
         // 4. Create config without backend key
-        let config = Config(baseURL: baseURL, backendKey: "") // No backend key needed
+        let config = Config(baseUrl: baseUrl, backendKey: "") // No backend key needed
         
         // 5. Perform the request using the helper function `performRequest`
         performRequest(
