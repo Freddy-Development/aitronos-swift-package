@@ -78,7 +78,7 @@ public extension AppHive {
         }
         
         // 4. Create a config with the Bearer token
-        let config = Config(baseURL: baseURL, backendKey: userToken)
+        let config = Config(baseUrl: baseUrl, backendKey: userToken)
         
         // 5. Perform the request
         performRequest(

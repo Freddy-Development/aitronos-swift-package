@@ -1,3 +1,11 @@
+//
+//  File.swift
+//  aitronos-swift-package
+//
+//  Created by Phillip Loacker on 19.10.2024.
+//
+
+import Foundation
 public class Aitronos: @unchecked Sendable {
     public var appHive: AppHive {
         AppHive(userToken: userToken)
@@ -8,7 +16,7 @@ public class Aitronos: @unchecked Sendable {
     }
     
     public var assistantMessaging: FreddyApi.AssistantMessaging {
-        FreddyApi.AssistantMessaging(userToken: userToken)
+        FreddyApi.AssistantMessaging(userToken: userToken, baseUrl: freddyApi.baseUrl)
     }
     
     public private(set) var userToken = ""

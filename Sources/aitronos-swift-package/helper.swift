@@ -207,11 +207,11 @@ public enum HTTPMethod: String {
 
 // MARK: - Config Struct
 public struct Config {
-    let baseURL: String
+    let baseUrl: String
     let backendKey: String
 }
 // MARK: - FreddyError Enum
-public enum FreddyError: Error {
+public enum FreddyError: Error, Equatable, LocalizedError {
     case invalidURL
     case invalidResponse
     case httpError(statusCode: Int, description: String)
@@ -221,6 +221,62 @@ public enum FreddyError: Error {
     case noUserFound
     case incorrectPassword
     case invalidCredentials
+    case serverError(title: String, message: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "The URL provided is invalid."
+        case .invalidResponse:
+            return "The response received from the server is invalid."
+        case .httpError(let statusCode, let description):
+            return "HTTP error \(statusCode): \(description)"
+        case .noData:
+            return "No data was received from the server."
+        case .decodingError(let error, let data):
+            return "Failed to decode the response. Error: \(error.localizedDescription). Data: \(String(data: data, encoding: .utf8) ?? "N/A")."
+        case .networkIssue(let description):
+            return "A network issue occurred: \(description)"
+        case .noUserFound:
+            return "No user found with the provided credentials."
+        case .incorrectPassword:
+            return "The provided password is incorrect."
+        case .invalidCredentials:
+            return "Invalid credentials were provided."
+        case .serverError(let title, let message):
+            return "\(title): \(message)"
+        }
+    }
+
+    public static func == (lhs: FreddyError, rhs: FreddyError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL):
+            return true
+        case (.invalidResponse, .invalidResponse):
+            return true
+        case (.httpError(let lhsStatusCode, let lhsDescription),
+              .httpError(let rhsStatusCode, let rhsDescription)):
+            return lhsStatusCode == rhsStatusCode && lhsDescription == rhsDescription
+        case (.noData, .noData):
+            return true
+        case (.decodingError(let lhsError, let lhsData),
+              .decodingError(let rhsError, let rhsData)):
+            return lhsError.localizedDescription == rhsError.localizedDescription && lhsData == rhsData
+        case (.networkIssue(let lhsDescription), .networkIssue(let rhsDescription)):
+            return lhsDescription == rhsDescription
+        case (.noUserFound, .noUserFound):
+            return true
+        case (.incorrectPassword, .incorrectPassword):
+            return true
+        case (.invalidCredentials, .invalidCredentials):
+            return true
+        case (.serverError(let lhsTitle, let lhsMessage),
+              .serverError(let rhsTitle, let rhsMessage)):
+            return lhsTitle == rhsTitle && lhsMessage == rhsMessage
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - Perform HTTPS Request Function
@@ -234,7 +290,7 @@ public func performRequest<T: Decodable>(
     completion: @Sendable @escaping (Result<T?, FreddyError>) -> Void
 ) {
     // 1. Construct the URL
-    guard let url = URL(string: config.baseURL + endpoint) else {
+    guard let url = URL(string: config.baseUrl + endpoint) else {
         DispatchQueue.main.async {
             completion(.failure(.invalidURL))
         }
