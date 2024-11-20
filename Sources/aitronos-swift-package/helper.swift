@@ -136,7 +136,7 @@ public struct MessageRequestPayload: Codable {
     public var organizationId: Int
     public var assistantId: Int
     public var threadId: Int?
-    public var model: String?
+    public var model: FreddyModel?
     public var instructions: String?
     public var additionalInstructions: String?
     public var messages: [Message]
@@ -145,7 +145,7 @@ public struct MessageRequestPayload: Codable {
         organizationId: Int,
         assistantId: Int,
         threadId: Int? = nil,
-        model: String? = nil,
+        model: FreddyModel? = nil,
         instructions: String? = nil,
         additionalInstructions: String? = nil,
         messages: [Message] = []

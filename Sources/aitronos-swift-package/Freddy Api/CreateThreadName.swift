@@ -25,7 +25,8 @@ public extension FreddyApi {
             organizationId: 1,
             assistantId: 1,
             instructions: "Generate a concise chat title summarizing the last few messages. Max length: 3 words.",
-            messages: [.init(content: combinedText, role: "user")]
+            messages: [.init(content: combinedText, role: "user")],
+            model: <#T##String?#>
         )
         
         do {
