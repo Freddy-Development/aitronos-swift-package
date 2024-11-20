@@ -24,9 +24,9 @@ public extension FreddyApi {
         let payload = MessageRequestPayload(
             organizationId: 1,
             assistantId: 1,
+            model: .ftg15Basic,
             instructions: "Generate a concise chat title summarizing the last few messages. Max length: 3 words.",
-            messages: [.init(content: combinedText, role: "user")],
-            model: <#T##String?#>
+            messages: [.init(content: combinedText, role: "user")]
         )
         
         do {

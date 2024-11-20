@@ -6,69 +6,69 @@
 //
 
 public enum FreddyModel: String, CaseIterable, Codable {
-    case textGen15Turbo = "ftg-1.5"
-    case textGen15Basic = "ftg-1.5-basic"
-    case textGen16Advanced = "ftg-1.6"
-    case textGen16Basic = "ftg-1.6-basic"
-    case textGen10Turbo = "ftg-1.0"
-    case textGen10Basic = "ftg-1.0-basic"
-    case textGen05 = "ftg-0.5"
-    case imageGen = "fig"
-    case imageGenHD = "fig-hd"
-    case textToVoice = "fttv"
-    case textToVoiceHD = "fttv-hd"
-    case voiceToText = "fvtt"
-    case textModerationLatest = "ftm-latest"
-    case textModerationStable = "ftm-stable"
+    case ftg15Turbo = "ftg-1.5"
+    case ftg15Basic = "ftg-1.5-basic"
+    case ftg16Advanced = "ftg-1.6"
+    case ftg16Basic = "ftg-1.6-basic"
+    case ftg10Turbo = "ftg-1.0"
+    case ftg10Basic = "ftg-1.0-basic"
+    case ftg05 = "ftg-0.5"
+    case fig = "fig"
+    case figHD = "fig-hd"
+    case fttv = "fttv"
+    case fttvHD = "fttv-hd"
+    case fvtt = "fvtt"
+    case ftmLatest = "ftm-latest"
+    case ftmStable = "ftm-stable"
 
     public var title: String {
         switch self {
-        case .textGen15Turbo: return "Freddy Text GEN 1.5 Turbo"
-        case .textGen15Basic: return "Freddy Text GEN 1.5"
-        case .textGen16Advanced: return "Freddy Text GEN 1.6 Advanced"
-        case .textGen16Basic: return "Freddy Text GEN 1.6"
-        case .textGen10Turbo: return "Freddy Text GEN 1.0 Turbo"
-        case .textGen10Basic: return "Freddy Text GEN 1.0 Basic"
-        case .textGen05: return "Freddy Text GEN 0.5"
-        case .imageGen: return "Freddy Image GEN"
-        case .imageGenHD: return "Freddy Image GEN HD"
-        case .textToVoice: return "Freddy Text-To-Voice"
-        case .textToVoiceHD: return "Freddy Text-To-Voice HD"
-        case .voiceToText: return "Freddy Voice-To-Text"
-        case .textModerationLatest: return "Freddy Text Moderation - Latest"
-        case .textModerationStable: return "Freddy Text Moderation - Stable"
+        case .ftg15Turbo: return "Freddy Text GEN 1.5 Turbo"
+        case .ftg15Basic: return "Freddy Text GEN 1.5"
+        case .ftg16Advanced: return "Freddy Text GEN 1.6 Advanced"
+        case .ftg16Basic: return "Freddy Text GEN 1.6"
+        case .ftg10Turbo: return "Freddy Text GEN 1.0 Turbo"
+        case .ftg10Basic: return "Freddy Text GEN 1.0 Basic"
+        case .ftg05: return "Freddy Text GEN 0.5"
+        case .fig: return "Freddy Image GEN"
+        case .figHD: return "Freddy Image GEN HD"
+        case .fttv: return "Freddy Text-To-Voice"
+        case .fttvHD: return "Freddy Text-To-Voice HD"
+        case .fvtt: return "Freddy Voice-To-Text"
+        case .ftmLatest: return "Freddy Text Moderation - Latest"
+        case .ftmStable: return "Freddy Text Moderation - Stable"
         }
     }
 
     public var description: String {
         switch self {
-        case .textGen15Turbo:
+        case .ftg15Turbo:
             return "Our high-intelligence flagship model for complex, multi-step tasks. GPT-4o is cheaper and faster than GPT-4 Turbo."
-        case .textGen15Basic:
+        case .ftg15Basic:
             return "Our affordable and intelligent small model for fast, lightweight tasks. GPT-4o mini is cheaper and more capable than GPT-3.5 Turbo."
-        case .textGen16Advanced:
+        case .ftg16Advanced:
             return "Language models trained with reinforcement learning to perform complex reasoning. This reasoning model is designed to solve hard problems across domains."
-        case .textGen16Basic:
+        case .ftg16Basic:
             return "Language models trained with reinforcement learning to perform complex reasoning. This reasoning model is faster and cheaper reasoning model particularly good at coding, math, and science."
-        case .textGen10Turbo:
+        case .ftg10Turbo:
             return "The previous set of high-intelligence models. The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling."
-        case .textGen10Basic:
+        case .ftg10Basic:
             return "The previous set of high-intelligence models."
-        case .textGen05:
+        case .ftg05:
             return "A fast, inexpensive model for simple tasks."
-        case .imageGen:
+        case .fig:
             return "A model that can generate and edit images given a natural language prompt."
-        case .imageGenHD:
+        case .figHD:
             return "A model that can generate and edit images given a natural language prompt."
-        case .textToVoice:
+        case .fttv:
             return "A set of models that can convert text into natural sounding spoken audio, optimized for speed."
-        case .textToVoiceHD:
+        case .fttvHD:
             return "A set of models that can convert text into natural sounding spoken audio, optimized for quality."
-        case .voiceToText:
+        case .fvtt:
             return "A model that can convert audio into text."
-        case .textModerationLatest:
+        case .ftmLatest:
             return "A fine-tuned model that can detect whether text may be sensitive or unsafe."
-        case .textModerationStable:
+        case .ftmStable:
             return "A fine-tuned model that can detect whether text may be sensitive or unsafe."
         }
     }
