@@ -12,7 +12,7 @@ public extension AppHive {
     // MARK: - Assistant Struct
     /// The structure representing an assistant.
     struct Assistant: Decodable {
-        public let id: String
+        public let id: Int
         public let name: String
         public let instructions: String
     }
