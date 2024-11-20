@@ -7,13 +7,32 @@
 
 import Foundation
 
+/// Represents the structure of the response from the `executeRun` endpoint.
+public struct ExecuteRunResponse: Decodable, Sendable {
+    public let event: String
+    public let status: String
+    public let isResponse: Bool
+    public let response: String?
+    public let responseType: String
+    public let threadId: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case event
+        case status
+        case isResponse
+        case response
+        case responseType
+        case threadId
+    }
+}
+
 extension FreddyApi {
     /// Executes a non-streaming run request.
     /// - Parameter payload: The payload for the run request.
-    /// - Returns: A dictionary containing the response, or `nil` if there is no data.
+    /// - Returns: An array of `ExecuteRunResponse` containing the results of the run.
     /// - Throws: A `FreddyError` if the request fails or the response cannot be decoded.
     @available(macOS 12.0, *)
-    public func executeRun(payload: MessageRequestPayload) async throws -> [String: Any]? {
+    public func executeRun(payload: MessageRequestPayload) async throws -> [ExecuteRunResponse]? {
         let url = URL(string: "\(self.baseUrl)/messages/run-stream")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -34,6 +53,6 @@ extension FreddyApi {
             )
         }
         
-        return try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return try JSONDecoder().decode([ExecuteRunResponse].self, from: data)
     }
 }
