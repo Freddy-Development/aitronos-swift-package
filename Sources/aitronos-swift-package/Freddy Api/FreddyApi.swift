@@ -7,16 +7,10 @@
 
 import Foundation
 
-public class FreddyApi {
+public final class FreddyApi: Sendable {
     public let baseUrls: [String: String] = ["v1": "https://freddy-api.aitronos.com/v1"]
     public let baseUrl: String
-    public var userToken: String {
-        didSet {
-            if userToken.isEmpty {
-                fatalError("AppHive API Key cannot be empty")
-            }
-        }
-    }
+    public let userToken: String
     public init (userToken: String) {
         self.userToken = userToken
         guard let url = baseUrls["v1"] else {
