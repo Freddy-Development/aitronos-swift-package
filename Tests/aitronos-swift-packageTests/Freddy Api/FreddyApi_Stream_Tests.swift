@@ -30,7 +30,7 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         let payload = MessageRequestPayload(
             organizationId: 1,
             assistantId: 1,
-            messages: [Message(content: "Hello", role: "user")]
+            messages: [Message(content: "Hello", role: .user)]
         )
         print("Payload created: \(payload)")
         
