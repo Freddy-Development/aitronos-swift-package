@@ -43,6 +43,12 @@ extension FreddyApi {
         var payloadDict = payload.toDict()
         payloadDict["stream"] = false
         
+        // Ensure all values in the dictionary are valid JSON types
+        guard JSONSerialization.isValidJSONObject(payloadDict) else {
+            print("Invalid JSON payload: \(payloadDict)\n")
+            throw FreddyError.invalidResponse // Use an appropriate error
+        }
+        
         request.httpBody = try JSONSerialization.data(withJSONObject: payloadDict, options: [])
         
         let (data, response) = try await URLSession.shared.data(for: request)
