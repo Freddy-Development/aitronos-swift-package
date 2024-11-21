@@ -133,8 +133,8 @@ public struct Message: Codable {
 
 // MARK: - MessageRole Enum
 public enum MessageRole: String, Codable {
-    case user
-    case system
+    case user = "user"
+    case system = "system"
 }
 
 // MARK: - MessageRequestPayload Struct
