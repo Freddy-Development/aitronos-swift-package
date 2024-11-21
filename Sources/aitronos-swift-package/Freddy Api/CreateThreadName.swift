@@ -19,14 +19,16 @@ public extension FreddyApi {
         let recentMessages = Array(messages.suffix(maxMessages))
         
         // Join the messages for processing
-        let combinedText = recentMessages.joined(separator: " ")
+        let combinedText = recentMessages.joined(separator: ", ")
         
         let payload = MessageRequestPayload(
             organizationId: 1,
             assistantId: 1,
             model: .ftg15Basic,
-            instructions: "Generate a concise chat title summarizing the last few messages. Max length: 3 words.",
-            messages: [.init(content: combinedText, role: "user")]
+            messages: [
+                .init(content: "You need to generate a meaningful title for the newly created chat thread, based on the initial message sent by the user.", role: .system),
+                .init(content: "Please create a meaningful title for a chat thread here are the messages: \n" + combinedText, role: .user)
+            ]
         )
         
         do {
