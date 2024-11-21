@@ -16,7 +16,7 @@ final class FreddyApiTests: XCTestCase {
         let payload = MessageRequestPayload(
             organizationId: 1,
             assistantId: 1,
-            messages: [Message(content: "Hello", role: "user")]
+            messages: [Message(content: "Hello", role: .user)]
         )
         
         do {
@@ -35,7 +35,7 @@ final class FreddyApiTests: XCTestCase {
         let payload = MessageRequestPayload(
             organizationId: 1,
             assistantId: 9999, // Invalid assistant ID
-            messages: [Message(content: "Hello", role: "user")]
+            messages: [Message(content: "Hello", role: .user)]
         )
         
         do {
@@ -115,7 +115,7 @@ final class FreddyApiTests: XCTestCase {
             assistantId: 1,
             instructions: "Provide a joke",
             additionalInstructions: "Use humor",
-            messages: [Message(content: "Tell me a joke.", role: "user")]
+            messages: [Message(content: "Tell me a joke.", role: .user)]
         )
         
         do {

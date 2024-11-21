@@ -126,7 +126,7 @@ public struct Message: Codable {
     public func dictionaryRepresentation() -> [String: Any] {
         return [
             "content": content,
-            "role": role
+            "role": role.rawValue
         ]
     }
 }
@@ -134,7 +134,7 @@ public struct Message: Codable {
 // MARK: - MessageRole Enum
 public enum MessageRole: String, Codable {
     case user = "user"
-    case system = "system"
+    case assistant = "assistant"
 }
 
 // MARK: - MessageRequestPayload Struct
