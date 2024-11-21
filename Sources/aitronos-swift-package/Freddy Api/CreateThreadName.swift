@@ -26,7 +26,7 @@ public extension FreddyApi {
             assistantId: 1,
             model: .ftg15Basic,
             messages: [
-                .init(content: "You need to generate a meaningful title for the newly created chat thread, based on the initial message sent by the user.", role: .system),
+                .init(content: "You need to generate a meaningful title for the newly created chat thread, based on the initial message sent by the user. Please restrict the title length to a maximum of 3 or 4 words only.", role: .assistant),
                 .init(content: "Please create a meaningful title for a chat thread here are the messages: \n" + combinedText, role: .user)
             ]
         )
