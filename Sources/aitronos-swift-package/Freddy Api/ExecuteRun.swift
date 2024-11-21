@@ -40,17 +40,21 @@ extension FreddyApi {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Add "stream": false to the payload
-        var payloadDict = payload.toDict()
-        payloadDict["stream"] = false
+        var updatedPayload = payload
+        updatedPayload.stream = false
         
-        // Ensure all values in the dictionary are valid JSON types
+        let payloadDict = updatedPayload.toDict()
+        // Log and validate the payload
+        print("Payload dictionary before validation: \(payloadDict)")
         guard JSONSerialization.isValidJSONObject(payloadDict) else {
             print("Invalid JSON payload: \(payloadDict)\n")
-            throw FreddyError.invalidResponse // Use an appropriate error
+            throw FreddyError.invalidResponse
         }
-        
+
+        // Serialize the payload
         request.httpBody = try JSONSerialization.data(withJSONObject: payloadDict, options: [])
         
+        // Make the API call
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw FreddyError.httpError(
@@ -58,7 +62,13 @@ extension FreddyApi {
                 description: "Failed to execute run"
             )
         }
-        
-        return try JSONDecoder().decode([ExecuteRunResponse].self, from: data)
+
+        // Decode the response
+        do {
+            return try JSONDecoder().decode([ExecuteRunResponse].self, from: data)
+        } catch {
+            print("Failed to decode response: \(error.localizedDescription)")
+            throw FreddyError.decodingError(error: error, data: data)
+        }
     }
 }
