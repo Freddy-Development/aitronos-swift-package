@@ -116,9 +116,9 @@ public struct StreamEvent: Sendable {
 // MARK: - Message Struct
 public struct Message: Codable {
     public let content: String
-    public let role: String
+    public let role: MessageRole
     
-    public init(content: String, role: String) {
+    public init(content: String, role: MessageRole) {
         self.content = content
         self.role = role
     }
@@ -129,6 +129,12 @@ public struct Message: Codable {
             "role": role
         ]
     }
+}
+
+// MARK: - MessageRole Enum
+public enum MessageRole: String, Codable {
+    case user
+    case system
 }
 
 // MARK: - MessageRequestPayload Struct
