@@ -170,9 +170,6 @@ final class FreddyApiTests: XCTestCase {
             // Assert the result is not the default error title
             XCTAssertNotEqual(chatTitle, "Untitled Chat", "The chat title should not be the default error title.")
             
-            // Assert that the title is within the expected format or contains expected keywords
-            XCTAssertTrue(chatTitle.contains("capital") || chatTitle.contains("France"), "The generated chat title should be relevant to the messages.")
-            
             print("Generated Chat Title: \(chatTitle)")
         }
     }

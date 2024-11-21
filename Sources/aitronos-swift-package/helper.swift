@@ -140,6 +140,7 @@ public struct MessageRequestPayload: Codable {
     public var instructions: String?
     public var additionalInstructions: String?
     public var messages: [Message]
+    public var stream: Bool = true
 
     public init(
         organizationId: Int,
@@ -164,10 +165,11 @@ public struct MessageRequestPayload: Codable {
             "organization_id": organizationId,
             "assistant_id": assistantId,
             "thread_id": threadId,
-            "model": model,
+            "model": model?.rawValue, // Convert to raw value for serialization
             "instructions": instructions,
             "additional_instructions": additionalInstructions,
-            "messages": messages.map { $0.dictionaryRepresentation() }
+            "messages": messages.map { $0.dictionaryRepresentation() },
+            "stream": stream
         ]
         return payload.compactMapValues { $0 } // Remove nil values
     }
