@@ -10,3 +10,5 @@ Tests/Secrets.json
 Tests/aitronos-swift-packageTests/Config.json
 
 Tests/aitronos-swift-packageTests/Config.plist
+
+Sources/aitronos-swift-package/Alamofire
