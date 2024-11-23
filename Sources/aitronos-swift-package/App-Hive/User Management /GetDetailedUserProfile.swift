@@ -35,9 +35,9 @@ public extension AppHive {
     ///   AppHive().getDetailedUserProfile { result in
     ///       switch result {
     ///       case .success(let profile):
-    ///           print("Full Name: \(profile.fullName), UserId: \(profile.userId), Timezone: \(profile.timezone)")
+    ///           //print("Full Name: \(profile.fullName), UserId: \(profile.userId), Timezone: \(profile.timezone)")
     ///       case .failure(let error):
-    ///           print("Failed to get detailed user profile: \(error)")
+    ///           //print("Failed to get detailed user profile: \(error)")
     ///       }
     ///   }
     ///   ```

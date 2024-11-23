@@ -13,13 +13,13 @@ public struct Config {
             fatalError("Couldn't find file 'Config.plist' in the package bundle.")
         }
         
-        print("Successfully found Config.plist at URL: \(fileUrl)")
+        //print("Successfully found Config.plist at URL: \(fileUrl)")
         
         guard let plist = NSDictionary(contentsOf: fileUrl) else {
             fatalError("Couldn't load contents of 'Config.plist'. Please check the file structure.")
         }
         
-        print("Successfully loaded Config.plist contents.")
+        //print("Successfully loaded Config.plist contents.")
         
         return plist
     }

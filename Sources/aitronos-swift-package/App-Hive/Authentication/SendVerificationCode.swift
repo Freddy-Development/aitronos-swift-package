@@ -39,9 +39,9 @@ public extension AppHive {
     ///   AppHive().sendVerificationCode(email: "user@example.com") { result in
     ///       switch result {
     ///       case .success(let response):
-    ///           print("Verification Code: \(response.code)")
+    ///           //print("Verification Code: \(response.code)")
     ///       case .failure(let error):
-    ///           print("Failed to send verification code: \(error)")
+    ///           //print("Failed to send verification code: \(error)")
     ///       }
     ///   }
     ///   ```

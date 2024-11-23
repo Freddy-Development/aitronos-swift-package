@@ -49,9 +49,9 @@ public extension AppHive {
     ///   ) { result in
     ///       switch result {
     ///       case .success(let response):
-    ///           print("User ID: \(response.verificationResponse.userId), Email Key: \(response.verificationResponse.emailKey)")
+    ///           //print("User ID: \(response.verificationResponse.userId), Email Key: \(response.verificationResponse.emailKey)")
     ///       case .failure(let error):
-    ///           print("Registration failed: \(error)")
+    ///           //print("Registration failed: \(error)")
     ///       }
     ///   }
     ///   ```

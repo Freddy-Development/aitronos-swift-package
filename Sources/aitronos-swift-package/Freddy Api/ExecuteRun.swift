@@ -45,9 +45,9 @@ extension FreddyApi {
         
         let payloadDict = updatedPayload.toDict()
         // Log and validate the payload
-        print("Payload dictionary before validation: \(payloadDict)")
+        //print("Payload dictionary before validation: \(payloadDict)")
         guard JSONSerialization.isValidJSONObject(payloadDict) else {
-            print("Invalid JSON payload: \(payloadDict)\n")
+            //print("Invalid JSON payload: \(payloadDict)\n")
             throw FreddyError.invalidResponse
         }
 
@@ -67,7 +67,7 @@ extension FreddyApi {
         do {
             return try JSONDecoder().decode([ExecuteRunResponse].self, from: data)
         } catch {
-            print("Failed to decode response: \(error.localizedDescription)")
+            //print("Failed to decode response: \(error.localizedDescription)")
             throw FreddyError.decodingError(error: error, data: data)
         }
     }

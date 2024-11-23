@@ -79,9 +79,9 @@ public extension AppHive {
     ///   AppHive().updateUserProfile(profileData: profileData) { result in
     ///       switch result {
     ///       case .success:
-    ///           print("Profile updated successfully!")
+    ///           //print("Profile updated successfully!")
     ///       case .failure(let error):
-    ///           print("Failed to update profile: \(error)")
+    ///           //print("Failed to update profile: \(error)")
     ///       }
     ///   }
     ///   ```

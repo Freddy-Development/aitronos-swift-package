@@ -36,9 +36,9 @@ public extension AppHive {
     ///   ) { result in
     ///       switch result {
     ///       case .success(let success):
-    ///           print("Username updated: \(success)")
+    ///           //print("Username updated: \(success)")
     ///       case .failure(let error):
-    ///           print("Failed to update username: \(error)")
+    ///           //print("Failed to update username: \(error)")
     ///       }
     ///   }
     ///   ```

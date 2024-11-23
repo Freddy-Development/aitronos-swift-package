@@ -30,9 +30,9 @@ public extension AppHive {
     ///   AppHive().getBasicUserProfile { result in
     ///       switch result {
     ///       case .success(let profile):
-    ///           print("Full Name: \(profile.fullName), Username: \(profile.userName), Email: \(profile.email)")
+    ///           //print("Full Name: \(profile.fullName), Username: \(profile.userName), Email: \(profile.email)")
     ///       case .failure(let error):
-    ///           print("Failed to get basic user profile: \(error)")
+    ///           //print("Failed to get basic user profile: \(error)")
     ///       }
     ///   }
     ///   ```

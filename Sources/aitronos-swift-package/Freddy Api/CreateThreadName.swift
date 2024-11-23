@@ -39,7 +39,7 @@ public extension FreddyApi {
                 throw FreddyError.noData // Throw if no title is returned
             }
         } catch {
-            print("Error generating chat title: \(error)")
+            //print("Error generating chat title: \(error)")
             return "Untitled Chat" // Default title in case of error
         }
     }

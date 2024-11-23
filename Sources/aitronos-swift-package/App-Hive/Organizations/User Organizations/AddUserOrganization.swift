@@ -49,9 +49,9 @@ public extension AppHive {
     ///   ) { result in
     ///       switch result {
     ///       case .success(let success):
-    ///           print("User successfully added to the organization: \(success)")
+    ///           //print("User successfully added to the organization: \(success)")
     ///       case .failure(let error):
-    ///           print("Failed to add user to organization: \(error)")
+    ///           //print("Failed to add user to organization: \(error)")
     ///       }
     ///   }
     ///   ```
