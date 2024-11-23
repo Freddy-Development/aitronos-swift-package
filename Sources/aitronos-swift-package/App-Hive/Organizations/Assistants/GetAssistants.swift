@@ -31,9 +31,9 @@ public extension AppHive {
     ///   AppHive().getAssistants(organizationID: "12345") { result in
     ///       switch result {
     ///       case .success(let assistants):
-    ///           assistants.forEach { print("Assistant Name: \($0.name), ID: \($0.id)") }
+    ///           assistants.forEach { //print("Assistant Name: \($0.name), ID: \($0.id)") }
     ///       case .failure(let error):
-    ///           print("Failed to retrieve assistants: \(error)")
+    ///           //print("Failed to retrieve assistants: \(error)")
     ///       }
     ///   }
     ///   ```

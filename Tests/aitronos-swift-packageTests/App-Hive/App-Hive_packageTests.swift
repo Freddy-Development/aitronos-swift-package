@@ -12,12 +12,12 @@ final class AuthenticationTests: XCTestCase {
 
     // Test login using real credentials from the config file
     func testLogin() async throws {
-        print("Starting testLogin")
+        //print("Starting testLogin")
 
         // 1. Load test credentials from the config file
         let email = Config.testEmail
         let password = Config.testPassword
-        print("Loaded test credentials: \(email)")
+        //print("Loaded test credentials: \(email)")
 
         // 2. Call the login function from AppHive
         await withCheckedContinuation { continuation in
@@ -30,7 +30,7 @@ final class AuthenticationTests: XCTestCase {
                     XCTAssertFalse(response.deviceId.isEmpty, "Device ID should not be empty")
 
                     // Print the results for debugging purposes
-                    print("Login successful: \(response)")
+                    //print("Login successful: \(response)")
                     
                     continuation.resume()  // Resume when login completes
                     

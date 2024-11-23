@@ -82,7 +82,7 @@ extension FreddyApi {
                         }
                     }
                 }
-                print("Stream completed successfully")
+                //print("Stream completed successfully")
             }
         }
         // Process buffer to extract complete JSON objects
@@ -105,7 +105,7 @@ extension FreddyApi {
                     else if char == "}" {
                         braceCount -= 1
                         if braceCount < 0 {
-                            print("Unbalanced braces detected!")
+                            //print("Unbalanced braces detected!")
                             braceCount = 0
                             startIndex = nil
                             continue
@@ -120,10 +120,10 @@ extension FreddyApi {
                                    let event = StreamEvent.fromJson(jsonDict) {
                                     callback(event)
                                 } else {
-                                    print("Invalid StreamEvent data")
+                                    //print("Invalid StreamEvent data")
                                 }
                             } catch {
-                                print("Failed to parse JSON: \(error)")
+                                //print("Failed to parse JSON: \(error)")
                                 DispatchQueue.main.async {
                                     self.delegate?.didEncounterError(error)
                                 }
@@ -137,7 +137,7 @@ extension FreddyApi {
                 }
                 // Force process buffer if braces are unbalanced and stream has completed
                 if forceProcess, let startIndexUnwrapped = startIndex {
-                    print("Force processing remaining buffer after stream completion")
+                    //print("Force processing remaining buffer after stream completion")
                     let jsonStr = String(self.buffer[startIndexUnwrapped...])
                     if let jsonData = jsonStr.data(using: .utf8) {
                         do {
@@ -145,10 +145,10 @@ extension FreddyApi {
                                let event = StreamEvent.fromJson(jsonDict) {
                                 callback(event)
                             } else {
-                                print("Invalid StreamEvent data during forced processing")
+                                //print("Invalid StreamEvent data during forced processing")
                             }
                         } catch {
-                            print("Failed to parse JSON in forced buffer processing: \(error)")
+                            //print("Failed to parse JSON in forced buffer processing: \(error)")
                             DispatchQueue.main.async {
                                 self.delegate?.didEncounterError(error)
                             }
@@ -162,7 +162,7 @@ extension FreddyApi {
                 }
                 // Log an error if there are unbalanced braces left after processing
                 if braceCount != 0 && !forceProcess {
-                    print("Warning: Unbalanced braces at the end of buffer processing.")
+                    //print("Warning: Unbalanced braces at the end of buffer processing.")
                 }
             }
         }

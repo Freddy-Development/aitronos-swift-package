@@ -31,9 +31,9 @@ public extension AppHive {
     ///   AppHive().getOrganizations { result in
     ///       switch result {
     ///       case .success(let organizations):
-    ///           organizations.forEach { print("Organization Name: \($0.name), Key: \($0.key)") }
+    ///           organizations.forEach { //print("Organization Name: \($0.name), Key: \($0.key)") }
     ///       case .failure(let error):
-    ///           print("Failed to retrieve organizations: \(error)")
+    ///           //print("Failed to retrieve organizations: \(error)")
     ///       }
     ///   }
     ///   ```

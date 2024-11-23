@@ -32,7 +32,7 @@ final class aitronos_swift_packageTests: XCTestCase {
 
             // 3. Verify the userToken is set after login
             XCTAssertFalse(aitronos.userToken.isEmpty, "The user token should not be empty after a successful login.")
-            print("User token: \(aitronos.userToken)")
+            //print("User token: \(aitronos.userToken)")
         } catch {
             XCTFail("Failed to initialize Aitronos with login: \(error)")
         }

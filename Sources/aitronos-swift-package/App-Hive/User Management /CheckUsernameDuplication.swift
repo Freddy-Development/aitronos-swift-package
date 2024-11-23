@@ -36,9 +36,9 @@ public extension AppHive {
     ///   ) { result in
     ///       switch result {
     ///       case .success(let isAvailable):
-    ///           print("Username available: \(isAvailable)")
+    ///           //print("Username available: \(isAvailable)")
     ///       case .failure(let error):
-    ///           print("Failed to check username: \(error)")
+    ///           //print("Failed to check username: \(error)")
     ///       }
     ///   }
     ///   ```

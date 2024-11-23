@@ -7,93 +7,123 @@
 
 import Foundation
 
-public extension AppHive {
-    struct FileUploadResponse: Decodable {
-        let fileId: String
+public struct FileUploadResponse: Codable {
+    public let success: Bool
+    public let message: String
+}
+
+public enum FileUploadPurpose: String, Codable {
+    case assistants = "assistants"
+    case vision = "vision"
+    case batch = "batch"
+    case fineTune = "fine-tune"
+
+    public var description: String {
+        switch self {
+        case .assistants:
+            return "Assistants and Message files"
+        case .vision:
+            return "Assistants image file inputs"
+        case .batch:
+            return "Batch API"
+        case .fineTune:
+            return "Fine-tuning"
+        }
     }
-    
-    /// Upload a file to the vector store
-    /// - Parameters:
-    ///   - organizationId: The organization ID where the file is uploaded
-    ///   - fileURL: The local file URL of the binary content to upload
-    ///   - purpose: The purpose of the file upload (must match predefined values like 'fine-tune', 'assistants', 'batch', etc.)
-    ///   - fileName: The desired name for the file after it is uploaded
-    ///   - token: Bearer token for authentication
-    ///   - closure: Completion handler with success or failure response
-    func uploadFile(
-        organizationId: String,
-        fileURL: URL,
-        purpose: String,
+}
+
+public extension FreddyApi {
+    public func uploadFile(
+        organizationId: Int,
+        fileData: Data,
         fileName: String,
-        token: String,
-        closure: @Sendable @escaping (Result<FileUploadResponse, FreddyError>) -> Void
-    ) {
-        // 1. API Endpoint
-        let endpoint = "/v1/organizations/\(organizationId)/file/upload"
-        
-        // 2. Create boundary for multipart/form-data
-        let boundary = UUID().uuidString
-        
-        // 3. Construct the multipart form body
-        var body = Data()
-        
-        // 3a. Add file content
-        if let fileData = try? Data(contentsOf: fileURL) {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
-            body.append(fileData)
-            body.append("\r\n".data(using: .utf8)!)
-        } else {
-            DispatchQueue.main.async {
-                closure(.failure(.networkIssue(description: "Failed to read file data")))
-            }
-            return
-        }
-        
-        // 3b. Add purpose field
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"purpose\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(purpose)\r\n".data(using: .utf8)!)
-        
-        // 3c. Add fileName field
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"fileName\"\r\n\r\n".data(using: .utf8)!)
-        body.append("\(fileName)\r\n".data(using: .utf8)!)
-        
-        // 3d. End boundary
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        // 4. Create request configuration
-        let config = Config(baseUrl: "https://freddy-core-api.azurewebsites.net", backendKey: token)
-        
-        // 5. Create a custom request and add multipart headers
-        var request = URLRequest(url: URL(string: config.baseUrl + endpoint)!)
-        request.httpMethod = HTTPMethod.post.rawValue
+        purpose: FileUploadPurpose
+    ) async throws -> FileUploadResponse {
+        let url = URL(string: "\(baseUrl)/organizations/\(organizationId)/file/upload")!
+        //print("Uploading file to URL: \(url.absoluteString)")
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = body
-        
-        // 6. Perform the request using the helper function
-        performRequest(
-            endpoint: endpoint,
-            method: .post,
-            config: config,
-            body: body,
-            emptyResponse: false,
-            decoder: JSONDecoder()
-        ) { (result: Result<FileUploadResponse?, FreddyError>) in
-            switch result {
-            case .success(let response):
-                if let response = response {
-                    closure(.success(response))
-                } else {
-                    closure(.failure(.noData))
-                }
-                
-            case .failure(let error):
-                closure(.failure(error))
-            }
+
+        // Create the multipart form data
+        let bodyData = createMultipartFormData(
+            fileData: fileData,
+            fileName: fileName,
+            purpose: purpose.rawValue,
+            boundary: boundary
+        )
+
+        // Debugging print for the request body
+        if let bodyString = String(data: bodyData, encoding: .utf8) {
+            //print("Request Body: \n\(bodyString)")
+        } else {
+            //print("Failed to convert request body to string.")
         }
+
+        request.httpBody = bodyData
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            // Debugging print for the response
+            if let httpResponse = response as? HTTPURLResponse {
+                //print("Response Status Code: \(httpResponse.statusCode)")
+                //print("Response Headers: \(httpResponse.allHeaderFields)")
+            } else {
+                //print("Response is not a valid HTTPURLResponse.")
+            }
+
+            // Debugging print for the response data
+            if let responseString = String(data: data, encoding: .utf8) {
+                //print("Response Body: \n\(responseString)")
+            } else {
+                //print("Failed to convert response body to string.")
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                //print("File upload failed with status code \(statusCode). Error message: \(errorMessage)")
+                throw NSError(domain: "FileUploadError", code: statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            }
+
+            // Decode the response
+            let decodedResponse = try JSONDecoder().decode(FileUploadResponse.self, from: data)
+            //print("File uploaded successfully: \(decodedResponse)")
+            return decodedResponse
+        } catch {
+            //print("File upload failed with error: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    private func createMultipartFormData(
+        fileData: Data,
+        fileName: String,
+        purpose: String,
+        boundary: String
+    ) -> Data {
+        var body = Data()
+
+        // Add purpose
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"Purpose\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(purpose)\r\n".data(using: .utf8)!)
+
+        // Add file
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"File\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // Close boundary
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        //print("Generated multipart form data with boundary: \(boundary)")
+        return body
     }
 }

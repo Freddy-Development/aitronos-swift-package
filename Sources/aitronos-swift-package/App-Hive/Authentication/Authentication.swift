@@ -43,9 +43,9 @@ public extension AppHive {
     ///   AppHive.login(usernmeEmail: "user@example.com", password: "password123") { result in
     ///       switch result {
     ///       case .success(let loginResponse):
-    ///           print("Logged in! Token: \(loginResponse.token)")
+    ///           //print("Logged in! Token: \(loginResponse.token)")
     ///       case .failure(let error):
-    ///           print("Login failed: \(error)")
+    ///           //print("Login failed: \(error)")
     ///       }
     ///   }
     ///   ```
@@ -94,7 +94,7 @@ public extension AppHive {
             case .failure(let error):
                 // Custom error handling for 404 and 401 errors
                 if case let .httpError(statusCode, description) = error {
-                    print("HTTP Error \(statusCode): \(description)")
+                    //print("HTTP Error \(statusCode): \(description)")
                     switch statusCode {
                     case 404:
                         closure(.failure(.noUserFound))

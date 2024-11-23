@@ -39,10 +39,10 @@ public extension AppHive {
     ///       switch result {
     ///       case .success(let organizations):
     ///           organizations.forEach { org in
-    ///               print("Organization: \(org.organizationName), Joined: \(org.isUserJoined)")
+    ///               //print("Organization: \(org.organizationName), Joined: \(org.isUserJoined)")
     ///           }
     ///       case .failure(let error):
-    ///           print("Failed to retrieve user organizations: \(error)")
+    ///           //print("Failed to retrieve user organizations: \(error)")
     ///       }
     ///   }
     ///   ```

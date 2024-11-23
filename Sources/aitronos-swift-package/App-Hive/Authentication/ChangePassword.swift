@@ -47,9 +47,9 @@ public extension AppHive {
     ///   ) { result in
     ///       switch result {
     ///       case .success(let response):
-    ///           print("Password changed successfully: \(response.message)")
+    ///           //print("Password changed successfully: \(response.message)")
     ///       case .failure(let error):
-    ///           print("Failed to change password: \(error)")
+    ///           //print("Failed to change password: \(error)")
     ///       }
     ///   }
     ///   ```
