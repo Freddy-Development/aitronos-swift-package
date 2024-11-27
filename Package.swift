@@ -26,7 +26,8 @@ let package = Package(
             name: "aitronos-swift-packageTests",
             dependencies: ["aitronos"],
             resources: [
-                .process("Config.plist")
+                .process("Config.plist"),
+                .process("Resources/testFile.txt")
             ]
         ),
     ]
