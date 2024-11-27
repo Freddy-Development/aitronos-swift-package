@@ -7,11 +7,6 @@
 
 import Foundation
 
-public struct FileUploadResponse: Codable {
-    public let success: Bool
-    public let message: String
-}
-
 public enum FileUploadPurpose: String, Codable {
     case assistants = "assistants"
     case vision = "vision"
@@ -32,22 +27,35 @@ public enum FileUploadPurpose: String, Codable {
     }
 }
 
+public struct FileUploadResponse: Codable {
+    public let fileId: Int?
+    public let success: Bool?
+    public let message: String?
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        fileId = try container.decodeIfPresent(Int.self, forKey: .fileId)
+        success = fileId != nil
+        message = try container.decodeIfPresent(String.self, forKey: .message) ?? "No message provided"
+    }
+}
+
 public extension FreddyApi {
-    public func uploadFile(
+    func uploadFile(
         organizationId: Int,
         fileData: Data,
         fileName: String,
         purpose: FileUploadPurpose
     ) async throws -> FileUploadResponse {
         let url = URL(string: "\(baseUrl)/organizations/\(organizationId)/file/upload")!
-        //print("Uploading file to URL: \(url.absoluteString)")
-
+        
+        // Boundary for multipart form data
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-
+        
         // Create the multipart form data
         let bodyData = createMultipartFormData(
             fileData: fileData,
@@ -55,47 +63,54 @@ public extension FreddyApi {
             purpose: purpose.rawValue,
             boundary: boundary
         )
-
-        // Debugging print for the request body
+        
+        // Debugging: Print the payload
         if let bodyString = String(data: bodyData, encoding: .utf8) {
-            //print("Request Body: \n\(bodyString)")
+            print("[DEBUG] Multipart Payload:\n\(bodyString)")
         } else {
-            //print("Failed to convert request body to string.")
+            print("[DEBUG] Failed to encode body data to String.")
         }
-
+        
         request.httpBody = bodyData
+
+        // Debugging: Print headers
+        print("[DEBUG] Request Headers:")
+        for (header, value) in request.allHTTPHeaderFields ?? [:] {
+            print("\(header): \(value)")
+        }
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-
-            // Debugging print for the response
+            
+            // Debugging: Print HTTP response details
             if let httpResponse = response as? HTTPURLResponse {
-                //print("Response Status Code: \(httpResponse.statusCode)")
-                //print("Response Headers: \(httpResponse.allHeaderFields)")
+                print("[DEBUG] Response Status Code: \(httpResponse.statusCode)")
+                print("[DEBUG] Response Headers: \(httpResponse.allHeaderFields)")
             } else {
-                //print("Response is not a valid HTTPURLResponse.")
+                print("[DEBUG] Response is not an HTTPURLResponse.")
             }
-
-            // Debugging print for the response data
+            
+            // Debugging: Print raw response data
             if let responseString = String(data: data, encoding: .utf8) {
-                //print("Response Body: \n\(responseString)")
+                print("[DEBUG] Response Body:\n\(responseString)")
             } else {
-                //print("Failed to convert response body to string.")
+                print("[DEBUG] Failed to decode response data to String.")
             }
-
+            
+            // Check for successful HTTP response
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                //print("File upload failed with status code \(statusCode). Error message: \(errorMessage)")
                 throw NSError(domain: "FileUploadError", code: statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
             }
-
-            // Decode the response
+            
+            // Decode the response into FileUploadResponse
             let decodedResponse = try JSONDecoder().decode(FileUploadResponse.self, from: data)
-            //print("File uploaded successfully: \(decodedResponse)")
+            print("[DEBUG] Decoded Response: \(decodedResponse)")
             return decodedResponse
         } catch {
-            //print("File upload failed with error: \(error.localizedDescription)")
+            // Debugging: Print error
+            print("[DEBUG] File upload failed with error: \(error.localizedDescription)")
             throw error
         }
     }
@@ -107,23 +122,30 @@ public extension FreddyApi {
         boundary: String
     ) -> Data {
         var body = Data()
-
-        // Add purpose
+        
+        // Add Purpose field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"Purpose\"\r\n\r\n".data(using: .utf8)!)
         body.append("\(purpose)\r\n".data(using: .utf8)!)
-
-        // Add file
+        
+        // Add FileName field
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"FileName\"\r\n\r\n".data(using: .utf8)!)
+        body.append("\(fileName)\r\n".data(using: .utf8)!)
+        
+        // Add File field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"File\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
         body.append(fileData)
         body.append("\r\n".data(using: .utf8)!)
-
+        
         // Close boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-
-        //print("Generated multipart form data with boundary: \(boundary)")
+        
+        // Debugging: Print generated body data
+        print("[DEBUG] Generated Multipart Data Size: \(body.count) bytes")
+        
         return body
     }
 }

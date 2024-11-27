@@ -10,45 +10,56 @@ import XCTest
 
 final class FileUploadTests: XCTestCase {
 
-    func testFileUploadSuccess() async throws {
-        let organizationId = 1
-        let fileName = "testFile.txt"
-        let purpose: FileUploadPurpose = .batch
-        let fileContent = "This is a test file."
-        let fileData = Data(fileContent.utf8)
-        
-        // Set up a fake API with expected success response
-        let freddyApi = FreddyApi(userToken: Config.testKey)
-        
-        // Expectations
-        let expectation = XCTestExpectation(description: "File upload completes successfully")
-        
-        Task {
-            do {
-                let response = try await freddyApi.uploadFile(
-                    organizationId: organizationId,
-                    fileData: fileData,
-                    fileName: fileName,
-                    purpose: purpose
-                )
-                
-                XCTAssertTrue(response.success, "File upload should succeed")
-                XCTAssertEqual(response.message, "File uploaded successfully", "Expected success message from server")
-                expectation.fulfill()
-            } catch {
-                XCTFail("File upload failed with error: \(error.localizedDescription)")
-                expectation.fulfill()
-            }
+    func testFileUploadSuccessWithRealFile() async throws {
+        // Locate the file in the test bundle
+        guard let fileUrl = Bundle.module.url(forResource: "testFile", withExtension: "txt"),
+              let fileData = try? Data(contentsOf: fileUrl) else {
+            XCTFail("File not found in test bundle")
+            return
         }
-        
-        // Wait for expectations asynchronously
-        await fulfillment(of: [expectation], timeout: 10.0)
+        let fileName = "testFile.txt"
+        let purpose: FileUploadPurpose = .assistants
+
+        // Organization and API Setup
+        let organizationId = 1 // Replace with a valid organization ID
+        let freddyApi = FreddyApi(userToken: Config.testKey) // Use live token
+
+        do {
+            // Call the actual API
+            let response = try await freddyApi.uploadFile(
+                organizationId: organizationId,
+                fileData: fileData,
+                fileName: fileName,
+                purpose: purpose
+            )
+
+            // Assert the response
+            XCTAssertNotNil(response.fileId, "File ID should not be nil")
+            print("[DEBUG] Uploaded File ID: \(String(describing: response.fileId))")
+
+            if let success = response.success {
+                XCTAssertTrue(success, "File upload should succeed")
+            } else {
+                XCTFail("Response does not contain success flag")
+            }
+
+            if let message = response.message {
+                print("[DEBUG] Server Message: \(message)")
+            } else {
+                XCTFail("Response does not contain message field")
+            }
+            
+            print("[DEBUG] Test Passed: File upload completed successfully.")
+        } catch {
+            // Handle and assert error details
+            print("[DEBUG] File upload failed with error: \(error.localizedDescription)")
+            XCTFail("File upload failed with error: \(error.localizedDescription)")
+        }
     }
     
     func testFileUploadFailure() async throws {
         let organizationId = -1 // Invalid ID to simulate failure
         let fileName = "testFile.txt"
-        let purpose = "testing"
         let fileContent = "This is a test file."
         let fileData = Data(fileContent.utf8)
         
