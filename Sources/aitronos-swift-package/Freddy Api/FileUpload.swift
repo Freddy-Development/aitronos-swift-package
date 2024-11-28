@@ -27,7 +27,7 @@ public enum FileUploadPurpose: String, Codable {
     }
 }
 
-public struct FileUploadResponse: Codable {
+public struct FileUploadResponse: Codable, Sendable {
     public let fileId: Int?
     public let success: Bool?
     public let message: String?
