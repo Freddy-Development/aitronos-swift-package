@@ -147,7 +147,7 @@ public struct MessageRequestPayload: Codable {
     public var additionalInstructions: String?
     public var messages: [Message]
     public var stream: Bool = true
-    public var files: [String] = []
+    public var files: [Int]
 
     public init(
         organizationId: Int,
@@ -157,7 +157,7 @@ public struct MessageRequestPayload: Codable {
         instructions: String? = nil,
         additionalInstructions: String? = nil,
         messages: [Message] = [],
-        files: [String] = []
+        files: [Int] = []
     ) {
         self.organizationId = organizationId
         self.assistantId = assistantId
@@ -169,17 +169,18 @@ public struct MessageRequestPayload: Codable {
         self.files = files
     }
 
+    /// Converts the payload into a dictionary representation
     public func toDict() -> [String: Any] {
         let payload: [String: Any?] = [
             "organization_id": organizationId,
             "assistant_id": assistantId,
             "thread_id": threadId,
-            "model": model?.rawValue, // Convert to raw value for serialization
+            "model": model?.rawValue, // Ensure `model` is converted to raw value
             "instructions": instructions,
             "additional_instructions": additionalInstructions,
             "messages": messages.map { $0.dictionaryRepresentation() },
             "stream": stream,
-            "files": files.map { $0 }
+            "files": files.map { String($0) } // Convert file IDs to strings
         ]
         return payload.compactMapValues { $0 } // Remove nil values
     }
