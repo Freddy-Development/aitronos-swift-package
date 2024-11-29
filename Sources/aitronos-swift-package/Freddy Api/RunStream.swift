@@ -6,10 +6,12 @@
 //
 
 import Foundation
+
 public protocol StreamEventDelegate: AnyObject {
     func handleStreamEvent(_ event: StreamEvent)
-    func didEncounterError(_ error: Error)
+    func didEncounterError(_ error: FreddyError)
 }
+
 extension FreddyApi {
     public final class AssistantMessaging: NSObject, URLSessionDataDelegate, @unchecked Sendable {
         public var userToken: String
@@ -20,6 +22,7 @@ extension FreddyApi {
         public let baseUrl: String
         
         public weak var delegate: StreamEventDelegate?
+
         public init(userToken: String, baseUrl: String) {
             self.userToken = userToken
             self.baseUrl = baseUrl
@@ -29,19 +32,24 @@ extension FreddyApi {
         
         public func createStream(payload: MessageRequestPayload, delegate: StreamEventDelegate) {
             self.delegate = delegate
-            let url = URL(string: "\(self.baseUrl)/messages/run-stream")!
+            guard let url = URL(string: "\(self.baseUrl)/messages/run-stream") else {
+                delegate.didEncounterError(.invalidURL)
+                return
+            }
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("Bearer \(self.userToken)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
             let payloadDict = payload.toDict()
             do {
                 let jsonData = try JSONSerialization.data(withJSONObject: payloadDict, options: [])
                 request.httpBody = jsonData
             } catch {
-                delegate.didEncounterError(error)
+                delegate.didEncounterError(.decodingError(error: error, data: Data()))
                 return
             }
+            
             let task = session.dataTask(with: request)
             task.resume()
         }
@@ -66,52 +74,71 @@ extension FreddyApi {
         public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
             if isCompleted { return }
             isCompleted = true
+            
             if let error = error {
                 DispatchQueue.main.async {
-                    self.delegate?.didEncounterError(error)
+                    self.delegate?.didEncounterError(.networkIssue(description: error.localizedDescription))
                 }
-            } else {
-                // Force process any remaining buffer when stream completes
-                bufferQueue.async {
-                    self.processBuffer(forceProcess: true) { [weak self] event in
-                        guard let self = self else { return }
-                        if let event = event {
-                            DispatchQueue.main.async {
-                                self.delegate?.handleStreamEvent(event)
+                return
+            }
+            
+            if let response = task.response as? HTTPURLResponse {
+                switch response.statusCode {
+                case 200:
+                    // Process remaining buffer when stream completes
+                    bufferQueue.async {
+                        self.processBuffer(forceProcess: true) { [weak self] event in
+                            guard let self = self else { return }
+                            if let event = event {
+                                DispatchQueue.main.async {
+                                    self.delegate?.handleStreamEvent(event)
+                                }
                             }
                         }
                     }
+                case 500...599:
+                    DispatchQueue.main.async {
+                        self.delegate?.didEncounterError(.serverError(
+                            title: "Server Error",
+                            message: "HTTP \(response.statusCode): \(HTTPURLResponse.localizedString(forStatusCode: response.statusCode))"
+                        ))
+                    }
+                default:
+                    DispatchQueue.main.async {
+                        self.delegate?.didEncounterError(.httpError(
+                            statusCode: response.statusCode,
+                            description: HTTPURLResponse.localizedString(forStatusCode: response.statusCode)
+                        ))
+                    }
                 }
-                //print("Stream completed successfully")
+            } else {
+                DispatchQueue.main.async {
+                    self.delegate?.didEncounterError(.invalidResponse)
+                }
             }
         }
-        // Process buffer to extract complete JSON objects
+        
         private func processBuffer(forceProcess: Bool = false, callback: @Sendable @escaping (StreamEvent?) -> Void) {
             bufferQueue.async {
                 var braceCount = 0
-                var startIndex: String.Index? = nil  // Declare `startIndex` as an optional `String.Index`
-                var rangesToRemove = [Range<String.Index>]()  // Track ranges to remove later
-                // Iterate over the string indices and characters
+                var startIndex: String.Index? = nil
+                var rangesToRemove = [Range<String.Index>]()
+                
                 for currentIndex in self.buffer.indices {
                     let char = self.buffer[currentIndex]
-                    // Increment brace count on opening brace '{'
                     if char == "{" {
                         braceCount += 1
                         if startIndex == nil {
                             startIndex = currentIndex
                         }
-                    }
-                    // Decrement brace count on closing brace '}'
-                    else if char == "}" {
+                    } else if char == "}" {
                         braceCount -= 1
                         if braceCount < 0 {
-                            //print("Unbalanced braces detected!")
                             braceCount = 0
                             startIndex = nil
                             continue
                         }
                     }
-                    // Process complete JSON objects or force process remaining buffer on stream completion
                     if braceCount == 0, let startIndexUnwrapped = startIndex {
                         let jsonStr = String(self.buffer[startIndexUnwrapped...currentIndex])
                         if let jsonData = jsonStr.data(using: .utf8) {
@@ -119,50 +146,36 @@ extension FreddyApi {
                                 if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
                                    let event = StreamEvent.fromJson(jsonDict) {
                                     callback(event)
-                                } else {
-                                    //print("Invalid StreamEvent data")
                                 }
                             } catch {
-                                //print("Failed to parse JSON: \(error)")
                                 DispatchQueue.main.async {
-                                    self.delegate?.didEncounterError(error)
+                                    self.delegate?.didEncounterError(.decodingError(error: error, data: jsonData))
                                 }
                             }
                         }
-                        // Track the range of the buffer that was processed to remove it later
                         let endIndex = self.buffer.index(after: currentIndex)
                         rangesToRemove.append(startIndexUnwrapped..<endIndex)
                         startIndex = nil
                     }
                 }
-                // Force process buffer if braces are unbalanced and stream has completed
                 if forceProcess, let startIndexUnwrapped = startIndex {
-                    //print("Force processing remaining buffer after stream completion")
                     let jsonStr = String(self.buffer[startIndexUnwrapped...])
                     if let jsonData = jsonStr.data(using: .utf8) {
                         do {
                             if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
                                let event = StreamEvent.fromJson(jsonDict) {
                                 callback(event)
-                            } else {
-                                //print("Invalid StreamEvent data during forced processing")
                             }
                         } catch {
-                            //print("Failed to parse JSON in forced buffer processing: \(error)")
                             DispatchQueue.main.async {
-                                self.delegate?.didEncounterError(error)
+                                self.delegate?.didEncounterError(.decodingError(error: error, data: jsonData))
                             }
                         }
                     }
-                    self.buffer.removeAll()  // Clear buffer after final processing
+                    self.buffer.removeAll()
                 }
-                // Remove all processed ranges from the buffer after the loop
                 for range in rangesToRemove.reversed() {
                     self.buffer.removeSubrange(range)
-                }
-                // Log an error if there are unbalanced braces left after processing
-                if braceCount != 0 && !forceProcess {
-                    //print("Warning: Unbalanced braces at the end of buffer processing.")
                 }
             }
         }
