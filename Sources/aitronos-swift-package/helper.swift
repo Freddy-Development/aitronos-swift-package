@@ -147,6 +147,7 @@ public struct MessageRequestPayload: Codable {
     public var additionalInstructions: String?
     public var messages: [Message]
     public var stream: Bool = true
+    public var files: [String] = []
 
     public init(
         organizationId: Int,
@@ -155,7 +156,8 @@ public struct MessageRequestPayload: Codable {
         model: FreddyModel? = nil,
         instructions: String? = nil,
         additionalInstructions: String? = nil,
-        messages: [Message] = []
+        messages: [Message] = [],
+        files: [String] = []
     ) {
         self.organizationId = organizationId
         self.assistantId = assistantId
@@ -164,6 +166,7 @@ public struct MessageRequestPayload: Codable {
         self.instructions = instructions
         self.additionalInstructions = additionalInstructions
         self.messages = messages
+        self.files = files
     }
 
     public func toDict() -> [String: Any] {
@@ -175,7 +178,8 @@ public struct MessageRequestPayload: Codable {
             "instructions": instructions,
             "additional_instructions": additionalInstructions,
             "messages": messages.map { $0.dictionaryRepresentation() },
-            "stream": stream
+            "stream": stream,
+            "files": files.map { $0 }
         ]
         return payload.compactMapValues { $0 } // Remove nil values
     }
