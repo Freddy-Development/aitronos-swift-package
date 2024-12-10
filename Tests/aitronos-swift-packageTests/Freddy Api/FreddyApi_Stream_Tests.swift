@@ -70,7 +70,7 @@ final class StreamTests: XCTestCase, StreamEventDelegate {
         }
     }
     
-    func didEncounterError(_ error: Error) {
+    func didEncounterError(_ error: aitronos.FreddyError) {
         // Fail the test if any unexpected error occurs
         print("Error encountered during stream: \(error)")
         XCTFail("Unexpected error encountered: \(error.localizedDescription)")
