@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum FileUploadPurpose: String, Codable {
+public enum FileUploadPurpose: String, Codable, Sendable {
     case assistants = "assistants"
     case vision = "vision"
     case batch = "batch"
