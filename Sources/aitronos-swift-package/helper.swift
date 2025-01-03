@@ -22,8 +22,9 @@ public struct StreamEvent: Sendable {
         case threadMessageCompleted
         case threadRunStepCompleted
         case threadRunCompleted
-        case other(String) // Catch-all case for unknown events
-        
+        case threadRunFailed
+        case other(String)
+
         // Custom initializer to handle raw values
         public init(rawValue: String) {
             switch rawValue {
@@ -37,12 +38,12 @@ public struct StreamEvent: Sendable {
             case "thread.message.delta": self = .threadMessageDelta
             case "thread.message.completed": self = .threadMessageCompleted
             case "thread.run.step.completed": self = .threadRunStepCompleted
-            case "thread.run.step.delta": self = .threadMessageDelta
             case "thread.run.completed": self = .threadRunCompleted
+            case "thread.run.failed": self = .threadRunFailed
             default: self = .other(rawValue)
             }
         }
-        
+
         // Raw value extraction for known cases
         public var rawValue: String {
             switch self {
@@ -57,10 +58,11 @@ public struct StreamEvent: Sendable {
             case .threadMessageCompleted: return "thread.message.completed"
             case .threadRunStepCompleted: return "thread.run.step.completed"
             case .threadRunCompleted: return "thread.run.completed"
+            case .threadRunFailed: return "thread.run.failed" 
             case .other(let rawValue): return rawValue
             }
         }
-    }
+}
 
     // Enum for Status types
     public enum Status: Codable, Equatable, Sendable {
@@ -147,7 +149,7 @@ public struct MessageRequestPayload: Codable {
     public var additionalInstructions: String?
     public var messages: [Message]
     public var stream: Bool = true
-    public var files: [Int]
+    public var files: [FileInput]
 
     public init(
         organizationId: Int,
@@ -157,7 +159,7 @@ public struct MessageRequestPayload: Codable {
         instructions: String? = nil,
         additionalInstructions: String? = nil,
         messages: [Message] = [],
-        files: [Int] = []
+        files: [FileInput] = []
     ) {
         self.organizationId = organizationId
         self.assistantId = assistantId
@@ -171,19 +173,46 @@ public struct MessageRequestPayload: Codable {
 
     /// Converts the payload into a dictionary representation
     public func toDict() -> [String: Any] {
-        let payload: [String: Any?] = [
+        var payload: [String: Any] = [
             "organization_id": organizationId,
             "assistant_id": assistantId,
-            "thread_id": threadId,
-            "model": model?.rawValue, // Ensure `model` is converted to raw value
-            "instructions": instructions,
-            "additional_instructions": additionalInstructions,
             "messages": messages.map { $0.dictionaryRepresentation() },
-            "stream": stream,
-            "files": files.map { String($0) } // Convert file IDs to strings
+            "stream": stream
         ]
-        return payload.compactMapValues { $0 } // Remove nil values
+
+        // Add optional properties only if they are not nil
+        if let threadId = threadId {
+            payload["thread_id"] = threadId
+        }
+        if let model = model?.rawValue {
+            payload["model"] = model
+        }
+        if let instructions = instructions {
+            payload["instructions"] = instructions
+        }
+        if let additionalInstructions = additionalInstructions {
+            payload["additional_instructions"] = additionalInstructions
+        }
+
+        // Convert `files` to base64 strings
+        let base64Files = files.compactMap { fileInput -> String? in
+            switch fileInput {
+            case .base64String(let base64):
+                return base64
+            case .filePath(let path):
+                return try? Data(contentsOf: URL(fileURLWithPath: path)).base64EncodedString()
+            }
+        }
+        payload["files"] = base64Files
+
+        return payload
     }
+}
+
+/// Represents a file input which can either be a base64 string or a file path
+public enum FileInput: Codable {
+    case base64String(String)
+    case filePath(String)
 }
 
 // MARK: - JSON Validation Helper
