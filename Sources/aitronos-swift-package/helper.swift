@@ -194,25 +194,29 @@ public struct MessageRequestPayload: Codable {
             payload["additional_instructions"] = additionalInstructions
         }
 
-        // Convert `files` to base64 strings
-        let base64Files = files.compactMap { fileInput -> String? in
-            switch fileInput {
-            case .base64String(let base64):
-                return base64
-            case .filePath(let path):
-                return try? Data(contentsOf: URL(fileURLWithPath: path)).base64EncodedString()
+        // Convert `files` to base64 strings only if the array is not empty
+        if !files.isEmpty {
+            let base64Files = files.compactMap { fileInput -> String? in
+                switch fileInput {
+                case .base64String(let base64):
+                    return base64
+                case .filePath(let url):
+                    // Safely read the file at the URL and convert to base64 string
+                    guard let data = try? Data(contentsOf: url) else { return nil }
+                    return data.base64EncodedString()
+                }
             }
+            payload["files"] = base64Files
         }
-        payload["files"] = base64Files
 
-        return payload
+        return payload  
     }
 }
 
 /// Represents a file input which can either be a base64 string or a file path
 public enum FileInput: Codable {
     case base64String(String)
-    case filePath(String)
+    case filePath(URL)
 }
 
 // MARK: - JSON Validation Helper
