@@ -23,8 +23,9 @@ public struct StreamEvent: Sendable {
         case threadRunStepCompleted
         case threadRunCompleted
         case threadRunFailed
+        case threadRunStepDelta
         case other(String)
-
+        
         // Custom initializer to handle raw values
         public init(rawValue: String) {
             switch rawValue {
@@ -40,10 +41,11 @@ public struct StreamEvent: Sendable {
             case "thread.run.step.completed": self = .threadRunStepCompleted
             case "thread.run.completed": self = .threadRunCompleted
             case "thread.run.failed": self = .threadRunFailed
+            case "thread.run.step.delta": self = .threadRunStepDelta
             default: self = .other(rawValue)
             }
         }
-
+        
         // Raw value extraction for known cases
         public var rawValue: String {
             switch self {
@@ -58,19 +60,20 @@ public struct StreamEvent: Sendable {
             case .threadMessageCompleted: return "thread.message.completed"
             case .threadRunStepCompleted: return "thread.run.step.completed"
             case .threadRunCompleted: return "thread.run.completed"
-            case .threadRunFailed: return "thread.run.failed" 
+            case .threadRunFailed: return "thread.run.failed"
             case .other(let rawValue): return rawValue
+            case .threadRunStepDelta: return "thread.run.step.delta"
             }
         }
-}
-
+    }
+    
     // Enum for Status types
     public enum Status: Codable, Equatable, Sendable {
         case queued
         case inProgress
         case completed
         case other(String) // Catch-all case for unknown statuses
-
+        
         // Custom initializer to handle raw values
         public init(rawValue: String) {
             switch rawValue {
@@ -80,7 +83,7 @@ public struct StreamEvent: Sendable {
             default: self = .other(rawValue)
             }
         }
-
+        
         // Raw value extraction for known cases
         public var rawValue: String {
             switch self {
@@ -91,13 +94,13 @@ public struct StreamEvent: Sendable {
             }
         }
     }
-
+    
     public let event: Event
     public let status: Status?
     public let isResponse: Bool
     public let response: String?
     public let threadId: Int
-
+    
     // Updated fromJson method to map JSON to enums
     static public func fromJson(_ json: [String: Any]) -> StreamEvent? {
         guard let eventString = json["event"] as? String,
@@ -105,12 +108,12 @@ public struct StreamEvent: Sendable {
               let threadId = json["threadId"] as? Int else {
             return nil
         }
-
+        
         let event = Event(rawValue: eventString)
         let statusString = json["status"] as? String
         let status = statusString.map { Status(rawValue: $0) }
         let response = json["response"] as? String
-
+        
         return StreamEvent(event: event, status: status, isResponse: isResponse, response: response, threadId: threadId)
     }
 }
@@ -124,7 +127,7 @@ public struct Message: Codable {
         self.content = content
         self.role = role
     }
-
+    
     public func dictionaryRepresentation() -> [String: Any] {
         return [
             "content": content,
@@ -150,7 +153,7 @@ public struct MessageRequestPayload: Codable {
     public var messages: [Message]
     public var stream: Bool = true
     public var files: [FileInput]
-
+    
     public init(
         organizationId: Int,
         assistantId: Int,
@@ -170,7 +173,7 @@ public struct MessageRequestPayload: Codable {
         self.messages = messages
         self.files = files
     }
-
+    
     /// Converts the payload into a dictionary representation
     public func toDict() -> [String: Any] {
         var payload: [String: Any] = [
@@ -179,7 +182,7 @@ public struct MessageRequestPayload: Codable {
             "messages": messages.map { $0.dictionaryRepresentation() },
             "stream": stream
         ]
-
+        
         // Add optional properties only if they are not nil
         if let threadId = threadId {
             payload["thread_id"] = threadId
@@ -193,7 +196,7 @@ public struct MessageRequestPayload: Codable {
         if let additionalInstructions = additionalInstructions {
             payload["additional_instructions"] = additionalInstructions
         }
-
+        
         // Convert `files` to base64 strings only if the array is not empty
         if !files.isEmpty {
             let base64Files = files.compactMap { fileInput -> String? in
@@ -208,8 +211,8 @@ public struct MessageRequestPayload: Codable {
             }
             payload["files"] = base64Files
         }
-
-        return payload  
+        
+        return payload
     }
 }
 
@@ -268,7 +271,7 @@ public enum FreddyError: Error, Equatable, LocalizedError {
     case incorrectPassword
     case invalidCredentials
     case serverError(title: String, message: String)
-
+    
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
@@ -293,7 +296,7 @@ public enum FreddyError: Error, Equatable, LocalizedError {
             return "\(title): \(message)"
         }
     }
-
+    
     public static func == (lhs: FreddyError, rhs: FreddyError) -> Bool {
         switch (lhs, rhs) {
         case (.invalidURL, .invalidURL):
@@ -342,17 +345,17 @@ public func performRequest<T: Decodable>(
         }
         return
     }
-
+    
     // 2. Configure the request
     var request = URLRequest(url: url)
     request.httpMethod = method.rawValue
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("Bearer \(config.backendKey)", forHTTPHeaderField: "Authorization")
-
+    
     if let body = body, [.post, .put].contains(method) {
         request.httpBody = body
     }
-
+    
     // 3. Perform the network request
     let task = URLSession.shared.dataTask(with: request) { data, response, error in
         DispatchQueue.main.async {
@@ -361,13 +364,13 @@ public func performRequest<T: Decodable>(
                 completion(.failure(.networkIssue(description: error.localizedDescription)))
                 return
             }
-
+            
             // 5. Validate the response and status code
             guard let httpResponse = response as? HTTPURLResponse else {
                 completion(.failure(.invalidResponse))
                 return
             }
-
+            
             // 6. Handle non-successful HTTP status codes
             guard (200...299).contains(httpResponse.statusCode) else {
                 if let data = data {
@@ -386,19 +389,19 @@ public func performRequest<T: Decodable>(
                 }
                 return
             }
-
+            
             // 7. Handle empty responses
             if emptyResponse {
                 completion(.success(nil))
                 return
             }
-
+            
             // 8. Ensure there is data to decode
             guard let data = data else {
                 completion(.failure(.noData))
                 return
             }
-
+            
             // 9. Attempt to decode the response
             do {
                 let decodedResponse = try decoder.decode(T.self, from: data)
