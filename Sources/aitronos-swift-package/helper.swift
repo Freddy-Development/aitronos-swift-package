@@ -24,6 +24,7 @@ public struct StreamEvent: Sendable {
         case threadRunCompleted
         case threadRunFailed
         case threadRunStepDelta
+        case error
         case other(String)
         
         // Custom initializer to handle raw values
@@ -42,6 +43,7 @@ public struct StreamEvent: Sendable {
             case "thread.run.completed": self = .threadRunCompleted
             case "thread.run.failed": self = .threadRunFailed
             case "thread.run.step.delta": self = .threadRunStepDelta
+            case "error": self = .error
             default: self = .other(rawValue)
             }
         }
@@ -63,6 +65,7 @@ public struct StreamEvent: Sendable {
             case .threadRunFailed: return "thread.run.failed"
             case .other(let rawValue): return rawValue
             case .threadRunStepDelta: return "thread.run.step.delta"
+            case .error: return "error"
             }
         }
     }
