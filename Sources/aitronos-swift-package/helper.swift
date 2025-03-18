@@ -578,8 +578,14 @@ public func performRequest<T: Decodable>(
                     // Try to extract error details from response
                     if let jsonObject = try? JSONSerialization.jsonObject(with: data),
                        let dictionary = jsonObject as? [String: Any],
-                       let errorDescription = dictionary["error"] as? String {
-                        completion(.failure(FreddyError.fromHTTPStatus(httpResponse.statusCode, description: errorDescription)))
+                       let errorMessage = dictionary["message"] as? String {
+                        if httpResponse.statusCode == 404 {
+                            completion(.failure(.resourceNotFound(resource: errorMessage)))
+                        } else if httpResponse.statusCode == 401 {
+                            completion(.failure(.invalidCredentials(details: errorMessage)))
+                        } else {
+                            completion(.failure(FreddyError.fromHTTPStatus(httpResponse.statusCode, description: errorMessage)))
+                        }
                     } else {
                         completion(.failure(FreddyError.fromHTTPStatus(httpResponse.statusCode)))
                     }

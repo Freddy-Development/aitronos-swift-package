@@ -35,12 +35,26 @@ final class AuthenticationTests: XCTestCase {
         let email = Config.testEmail
         let wrongPassword = "wrongpassword123"
 
-        do {
-            let _ = try await AppHive.login(usernmeEmail: email, password: wrongPassword)
-            XCTFail("Login should have failed with incorrect password")
-        } catch let error as FreddyError {
-            XCTAssertEqual(error, .unauthorized(reason: "Authentication required"), "Expected unauthorized error")
+        // Create an expectation for the asynchronous login call
+        let expectation = XCTestExpectation(description: "Login should fail with incorrect password")
+
+        AppHive.login(usernmeEmail: email, password: wrongPassword) { result in
+            switch result {
+            case .success:
+                XCTFail("Login should have failed with incorrect password")
+            case .failure(let error):
+                if case .invalidCredentials(let details) = error {
+                    XCTAssertEqual(details, "Incorrect password", "Expected incorrect password error")
+                } else {
+                    XCTFail("Expected invalidCredentials error, got \(error)")
+                }
+            }
+            // Fulfill the expectation to indicate that the async call has completed
+            expectation.fulfill()
         }
+
+        // Wait for the expectation to be fulfilled, or time out after 5 seconds
+        await fulfillment(of: [expectation], timeout: 5.0)
     }
 
     func testLoginWrongEmail() async throws {
@@ -51,7 +65,7 @@ final class AuthenticationTests: XCTestCase {
             let _ = try await AppHive.login(usernmeEmail: wrongEmail, password: password)
             XCTFail("Login should have failed with incorrect email")
         } catch let error as FreddyError {
-            XCTAssertEqual(error, .resourceNotFound(resource: "Requested resource"), "Expected resource not found error")
+            XCTAssertEqual(error, .resourceNotFound(resource: "User name not found"), "Expected user name not found error")
         }
     }
 }

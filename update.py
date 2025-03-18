@@ -181,7 +181,15 @@ Examples:
         else:
             print("⏩ Skipping tests as requested.")
 
-        # Step 4: Git operations and GitHub update (unless skipped)
+        # Step 4: Stage all changes, commit, and push
+        print("📂 Staging all changes...")
+        subprocess.run(["git", "add", "."], check=True)
+        print("📝 Committing changes...")
+        subprocess.run(["git", "commit", "-m", f"Bump version to {new_version}"], check=True)
+        print("🚀 Pushing changes to remote...")
+        subprocess.run(["git", "push"], check=True)
+
+        # Step 5: Git operations and GitHub update (unless skipped)
         if not args.skip_github:
             tag_version_in_git(new_version)
             create_github_update(new_version, args.token)
