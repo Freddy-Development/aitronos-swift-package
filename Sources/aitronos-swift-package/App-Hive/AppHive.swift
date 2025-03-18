@@ -6,6 +6,8 @@
 //
 
 public final class AppHive {
+    public static var baseUrl: String { "https://freddy-api.aitronos.com" }
+    
     public var baseUrl: String { "https://freddy-api.aitronos.com" }
     public var userToken: String {
         didSet {
