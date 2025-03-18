@@ -64,9 +64,7 @@ public extension AppHive {
         ]
         
         guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
-            DispatchQueue.main.async {
-                closure(.failure(.networkIssue(description: "Failed to serialize request body")))
-            }
+            closure(.failure(.invalidData(description: "Failed to serialize request body")))
             return
         }
         
@@ -86,25 +84,24 @@ public extension AppHive {
             switch result {
             case .success(let response):
                 if let response = response {
-                    closure(.success(response)) // Pass the non-nil response
+                    closure(.success(response))
                 } else {
-                    closure(.failure(.noData)) // Handle empty response case
+                    closure(.failure(.noData))
                 }
-                
             case .failure(let error):
-                // Custom error handling for 404 and 401 errors
                 if case let .httpError(statusCode, description) = error {
-                    //print("HTTP Error \(statusCode): \(description)")
                     switch statusCode {
                     case 404:
-                        closure(.failure(.noUserFound))
+                        closure(.failure(.resourceNotFound(resource: "User")))
                     case 401:
-                        closure(.failure(.incorrectPassword))
+                        closure(.failure(.invalidCredentials(details: description)))
+                    case 403:
+                        closure(.failure(.forbidden(reason: description)))
                     default:
-                        closure(.failure(error)) // Handle other HTTP errors
+                        closure(.failure(FreddyError.fromHTTPStatus(statusCode, description: description)))
                     }
                 } else {
-                    closure(.failure(error)) // Handle other types of errors
+                    closure(.failure(error))
                 }
             }
         }

@@ -20,26 +20,38 @@ final class AuthenticationTests: XCTestCase {
         //print("Loaded test credentials: \(email)")
 
         // 2. Call the login function from AppHive
-        await withCheckedContinuation { continuation in
-            AppHive.login(usernmeEmail: email, password: password) { result in
-                switch result {
-                case .success(let response):
-                    // Assert that we received a valid token and fulfill the continuation
-                    XCTAssertFalse(response.token.isEmpty, "Token should not be empty")
-                    XCTAssertFalse(response.refreshToken.token.isEmpty, "Refresh token should not be empty")
-                    XCTAssertFalse(response.deviceId.isEmpty, "Device ID should not be empty")
+        let response = try await AppHive.login(usernmeEmail: email, password: password)
+        
+        // 3. Assert the response
+        XCTAssertFalse(response.token.isEmpty, "Token should not be empty")
+        XCTAssertFalse(response.refreshToken.token.isEmpty, "Refresh token should not be empty")
+        XCTAssertFalse(response.deviceId.isEmpty, "Device ID should not be empty")
 
-                    // Print the results for debugging purposes
-                    //print("Login successful: \(response)")
-                    
-                    continuation.resume()  // Resume when login completes
-                    
-                case .failure(let error):
-                    // If login fails, print and fail the test
-                    XCTFail("Login failed with error: \(error)")
-                    continuation.resume()
-                }
-            }
+        // Print the results for debugging purposes
+        //print("Login successful: \(response)")
+    }
+
+    func testLoginWrongPassword() async throws {
+        let email = Config.testEmail
+        let wrongPassword = "wrongpassword123"
+
+        do {
+            let _ = try await AppHive.login(usernmeEmail: email, password: wrongPassword)
+            XCTFail("Login should have failed with incorrect password")
+        } catch let error as FreddyError {
+            XCTAssertEqual(error, .unauthorized(reason: "Authentication required"), "Expected unauthorized error")
+        }
+    }
+
+    func testLoginWrongEmail() async throws {
+        let wrongEmail = "wrongemail@example.com"
+        let password = Config.testPassword
+
+        do {
+            let _ = try await AppHive.login(usernmeEmail: wrongEmail, password: password)
+            XCTFail("Login should have failed with incorrect email")
+        } catch let error as FreddyError {
+            XCTAssertEqual(error, .resourceNotFound(resource: "Requested resource"), "Expected resource not found error")
         }
     }
 }
