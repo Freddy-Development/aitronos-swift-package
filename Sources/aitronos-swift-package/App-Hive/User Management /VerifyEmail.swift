@@ -17,7 +17,7 @@ public extension AppHive {
     
     // MARK: - VerifyEmailResponse Struct
     /// The structure representing the response from the API after verifying an email.
-    struct VerifyEmailResponse: Decodable {
+    public struct VerifyEmailResponse: Decodable {
         let success: Bool
 
         public init(from decoder: Decoder) throws {
