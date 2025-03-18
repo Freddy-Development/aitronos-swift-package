@@ -10,16 +10,37 @@ PACKAGE_FILE = "Package.swift"
 GITHUB_API_URL = "https://api.github.com"
 
 def get_current_version(package_file: str) -> str:
-    """Extract the current version number from Package.swift."""
-    with open(package_file, "r") as file:
-        content = file.read()
-
-    # Use regex to find the version number in Package.swift
-    version_match = re.search(r'\.package\(.*?version:\s*["\'](\d+\.\d+\.\d+)["\']', content, re.DOTALL)
-    if version_match:
-        return version_match.group(1)
-    else:
-        raise ValueError("Version number not found in Package.swift")
+    """Get the current version from Git tags."""
+    try:
+        # Get the latest tag that matches vX.Y.Z format
+        result = subprocess.run(
+            ["git", "tag", "--list", "v*.*.*"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Parse all version tags and find the latest
+        version_tags = result.stdout.strip().split('\n')
+        if not version_tags or version_tags == ['']:
+            return "0.0.0"  # Initial version if no tags exist
+            
+        versions = []
+        for tag in version_tags:
+            match = re.match(r'v(\d+\.\d+\.\d+)', tag)
+            if match:
+                versions.append(match.group(1))
+                
+        if not versions:
+            return "0.0.0"  # Initial version if no valid version tags
+            
+        # Sort versions and return the latest
+        versions.sort(key=lambda v: [int(x) for x in v.split('.')])
+        return versions[-1]
+        
+    except subprocess.CalledProcessError:
+        print("Warning: Could not get version from Git tags")
+        return "0.0.0"  # Initial version if git command fails
 
 def run_tests() -> None:
     """Run the Swift package tests."""
@@ -50,20 +71,8 @@ def bump_version(version: str, part: str) -> str:
     return f"{major}.{minor}.{patch}"
 
 def update_package_file(package_file: str, new_version: str) -> None:
-    """Update the version in Package.swift."""
-    with open(package_file, "r") as file:
-        content = file.read()
-
-    # Replace the version number in Package.swift
-    updated_content = re.sub(
-        r'(\.package\(.*?version:\s*["\'])(\d+\.\d+\.\d+)(["\'])',
-        f'\\1{new_version}\\3',
-        content,
-        flags=re.DOTALL
-    )
-
-    with open(package_file, "w") as file:
-        file.write(updated_content)
+    """No need to update Package.swift as versions are managed through Git tags."""
+    pass  # This function is now a no-op since we use Git tags for versioning
 
 def get_github_repo() -> tuple[str, str]:
     """Get GitHub repository owner and name from git remote URL."""
@@ -87,7 +96,7 @@ def get_github_repo() -> tuple[str, str]:
     except subprocess.CalledProcessError:
         raise ValueError("Could not get GitHub repository information")
 
-def create_github_release(version: str, token: Optional[str] = None) -> None:
+def create_github_update(version: str, token: Optional[str] = None) -> None:
     """Create a new release on GitHub."""
     if not token:
         token = os.environ.get("GITHUB_TOKEN")
@@ -95,7 +104,7 @@ def create_github_release(version: str, token: Optional[str] = None) -> None:
             raise ValueError("GitHub token not provided. Set GITHUB_TOKEN environment variable.")
 
     owner, repo = get_github_repo()
-    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/releases"
+    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/releases"  # Corrected endpoint
     
     headers = {
         "Authorization": f"token {token}",
@@ -121,13 +130,8 @@ def tag_version_in_git(version: str) -> None:
     tag = f"v{version}"
     print(f"Tagging the new version: {tag}")
     try:
-        # Add and commit version bump
-        subprocess.run(["git", "add", PACKAGE_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", f"Bump version to {version}"], check=True)
-        
         # Create and push tag
         subprocess.run(["git", "tag", "-a", tag, "-m", f"Version {version}"], check=True)
-        subprocess.run(["git", "push", "origin", "main"], check=True)
         subprocess.run(["git", "push", "origin", tag], check=True)
         print(f"🏷️  Version {version} tagged and pushed to Git.")
     except subprocess.CalledProcessError:
@@ -136,14 +140,14 @@ def tag_version_in_git(version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Update version, create Git tag, and GitHub release for Swift package.",
+        description="Create Git tag and GitHub update for Swift package.",
         formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 Examples:
-  python release.py patch
-  python release.py minor --skip-tests
-  python release.py major --skip-github
-  python release.py patch --dry-run
+  python update.py patch
+  python update.py minor --skip-tests
+  python update.py major --skip-github
+  python update.py patch --dry-run
         """
     )
     parser.add_argument("part", choices=["major", "minor", "patch"],
@@ -151,7 +155,7 @@ Examples:
     parser.add_argument("--skip-tests", action="store_true",
                       help="Skip running the test suite")
     parser.add_argument("--skip-github", action="store_true",
-                      help="Skip GitHub release creation")
+                      help="Skip GitHub update creation")
     parser.add_argument("--dry-run", action="store_true",
                       help="Show what would be done without making actual changes")
     parser.add_argument("--token", help="GitHub personal access token")
@@ -159,7 +163,7 @@ Examples:
     args = parser.parse_args()
 
     try:
-        # Step 1: Get the current version
+        # Step 1: Get the current version from Git tags
         current_version = get_current_version(PACKAGE_FILE)
         print(f"📎 Current version: {current_version}")
 
@@ -177,16 +181,12 @@ Examples:
         else:
             print("⏩ Skipping tests as requested.")
 
-        # Step 4: Update Package.swift with the new version
-        update_package_file(PACKAGE_FILE, new_version)
-        print(f"📝 Updated {PACKAGE_FILE} with version {new_version}")
-
-        # Step 5: Git operations and GitHub release (unless skipped)
+        # Step 4: Git operations and GitHub update (unless skipped)
         if not args.skip_github:
             tag_version_in_git(new_version)
-            create_github_release(new_version, args.token)
+            create_github_update(new_version, args.token)
         else:
-            print("⏩ Skipping Git operations and GitHub release as requested.")
+            print("⏩ Skipping Git operations and GitHub update as requested.")
 
         print(f"\n✅ Version update to {new_version} completed successfully!")
 
@@ -206,12 +206,12 @@ if __name__ == "__main__":
 #
 # 2. Optional Flags:
 #    --skip-tests:   Skip running the test suite before updating (use with caution)
-#    --skip-github:  Skip creating Git tags and GitHub release
+#    --skip-github:  Skip creating Git tags and GitHub update
 #    --dry-run:      Preview what would happen without making any actual changes
 #    --token:        Provide GitHub personal access token (alternatively use GITHUB_TOKEN env var)
 #
 # Examples:
-#   python release.py patch              # Bump patch version with all checks
-#   python release.py minor --skip-tests # Add new feature, skip testing
-#   python release.py major --dry-run    # Preview a major version bump
-#   python release.py patch --token xyz  # Provide GitHub token directly 
+#   python update.py patch              # Bump patch version with all checks
+#   python update.py minor --skip-tests # Add new feature, skip testing
+#   python update.py major --dry-run    # Preview a major version bump
+#   python update.py patch --token xyz  # Provide GitHub token directly 
