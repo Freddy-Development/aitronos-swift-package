@@ -12,7 +12,7 @@ final class aitronos_swift_packageTests: XCTestCase {
     
     func testInitWithToken() throws {
         // 1. Simulate a valid API key
-        let apiKey = "valid-test-api-key"
+        let apiKey = Config.testKey
 
         // 2. Initialize Aitronos with the API key
         let aitronos = Aitronos(apiKey: apiKey)
@@ -49,7 +49,7 @@ final class aitronos_swift_packageTests: XCTestCase {
             XCTFail("Initialization should fail with invalid credentials.")
         } catch let error as FreddyError {
             // 3. Verify the error is as expected
-            XCTAssertEqual(error, .noUserFound, "The error should indicate user not found.")
+            XCTAssertEqual(error, .resourceNotFound(resource: "Requested resource"), "The error should indicate user not found.")
         } catch {
             XCTFail("Unexpected error type: \(error)")
         }
@@ -62,7 +62,7 @@ final class aitronos_swift_packageTests: XCTestCase {
         do {
             _ = try await Aitronos(usernmeEmail: email, password: password)
         } catch let error as FreddyError {
-            XCTAssertEqual(error, .incorrectPassword, "The error should indicate incorrect password.")
+            XCTAssertEqual(error, .unauthorized(reason: "Authentication required"), "The error should indicate incorrect password.")
         } catch {
             XCTFail("Unexpected error type: \(error)")
         }

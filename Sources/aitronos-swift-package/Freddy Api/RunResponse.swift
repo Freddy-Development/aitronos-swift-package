@@ -17,7 +17,7 @@ extension FreddyApi {
     public func getRunResponse(organizationId: Int, threadKey: String) async throws -> RunResponse {
         let url = URL(string: "\(self.baseUrl)/messages/run-response")
         guard let url = url else {
-            throw FreddyError.invalidURL
+            throw FreddyError.invalidURL(url: "\(self.baseUrl)/messages/run-response")
         }
         
         var request = URLRequest(url: url)
@@ -34,7 +34,7 @@ extension FreddyApi {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw FreddyError.invalidResponse
+                throw FreddyError.invalidResponse(description: "Unknown response type")
             }
             
             switch httpResponse.statusCode {
@@ -48,7 +48,7 @@ extension FreddyApi {
         } catch let error as FreddyError {
             throw error // Re-throw FreddyError for clarity
         } catch {
-            throw FreddyError.networkIssue(description: error.localizedDescription)
+            throw FreddyError.from(error)
         }
     }
 }

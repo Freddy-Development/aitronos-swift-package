@@ -47,8 +47,7 @@ extension FreddyApi {
         // Log and validate the payload
         //print("Payload dictionary before validation: \(payloadDict)")
         guard JSONSerialization.isValidJSONObject(payloadDict) else {
-            //print("Invalid JSON payload: \(payloadDict)\n")
-            throw FreddyError.invalidResponse
+            throw FreddyError.invalidResponse(description: "Invalid JSON payload format")
         }
 
         // Serialize the payload
@@ -67,8 +66,10 @@ extension FreddyApi {
         do {
             return try JSONDecoder().decode([ExecuteRunResponse].self, from: data)
         } catch {
-            //print("Failed to decode response: \(error.localizedDescription)")
-            throw FreddyError.decodingError(error: error, data: data)
+            throw FreddyError.decodingError(
+                description: error.localizedDescription,
+                originalError: error
+            )
         }
     }
 }

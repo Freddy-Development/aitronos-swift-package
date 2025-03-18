@@ -68,10 +68,8 @@ public extension AppHive {
         let requestBody = RegisterUserRequest(email: email, password: password, fullName: fullName)
         
         // 3. Encode request body as JSON
-        guard let bodyData = try? JSONEncoder().encode(requestBody) else {
-            DispatchQueue.main.async {
-                closure(.failure(.networkIssue(description: "Failed to serialize request body")))
-            }
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
+            closure(.failure(.invalidData(description: "Failed to serialize request body")))
             return
         }
         

@@ -93,10 +93,8 @@ public extension AppHive {
         let endpoint = "/v1/user"
         
         // 2. Encode request body as JSON
-        guard let bodyData = try? JSONEncoder().encode(profileData) else {
-            DispatchQueue.main.async {
-                closure(.failure(.networkIssue(description: "Failed to serialize request body")))
-            }
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: profileData, options: []) else {
+            closure(.failure(.invalidData(description: "Failed to serialize request body")))
             return
         }
         

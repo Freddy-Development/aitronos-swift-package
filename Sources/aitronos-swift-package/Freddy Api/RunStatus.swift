@@ -21,7 +21,7 @@ extension FreddyApi {
     ) async throws -> String {
         let urlString = "\(self.baseUrl)/messages/run-status"
         guard let url = URL(string: urlString) else {
-            throw FreddyError.invalidURL
+            throw FreddyError.invalidURL(url: urlString)
         }
 
         let payload: [String: Any] = [
@@ -39,18 +39,18 @@ extension FreddyApi {
         return try await withCheckedThrowingContinuation { continuation in
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
-                    continuation.resume(throwing: FreddyError.networkIssue(description: error.localizedDescription))
+                    continuation.resume(throwing: FreddyError.from(error))
                     return
                 }
 
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    continuation.resume(throwing: FreddyError.invalidResponse)
+                    continuation.resume(throwing: FreddyError.invalidResponse(description: "Unknown response type"))
                     return
                 }
 
                 if !(200...299).contains(httpResponse.statusCode) {
                     let errorDescription = String(data: data ?? Data(), encoding: .utf8) ?? "Unknown error"
-                    continuation.resume(throwing: FreddyError.httpError(statusCode: httpResponse.statusCode, description: errorDescription))
+                    continuation.resume(throwing: FreddyError.fromHTTPStatus(httpResponse.statusCode, description: errorDescription))
                     return
                 }
 
@@ -63,7 +63,10 @@ extension FreddyApi {
                     let decodedResponse = try JSONDecoder().decode(RunStatusResponse.self, from: data)
                     continuation.resume(returning: decodedResponse.runStatus)
                 } catch {
-                    continuation.resume(throwing: FreddyError.decodingError(error: error, data: data))
+                    continuation.resume(throwing: FreddyError.decodingError(
+                        description: error.localizedDescription,
+                        originalError: error
+                    ))
                 }
             }
             task.resume()

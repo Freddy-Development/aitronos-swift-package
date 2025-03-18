@@ -33,7 +33,7 @@ extension FreddyApi {
         public func createStream(payload: MessageRequestPayload, delegate: StreamEventDelegate) {
             self.delegate = delegate
             guard let url = URL(string: "\(self.baseUrl)/messages/run-stream") else {
-                delegate.didEncounterError(.invalidURL)
+                delegate.didEncounterError(.invalidURL(url: "\(self.baseUrl)/messages/run-stream"))
                 return
             }
             var request = URLRequest(url: url)
@@ -46,7 +46,7 @@ extension FreddyApi {
                 let jsonData = try JSONSerialization.data(withJSONObject: payloadDict, options: [])
                 request.httpBody = jsonData
             } catch {
-                delegate.didEncounterError(.decodingError(error: error, data: Data()))
+                delegate.didEncounterError(.decodingError(description: error.localizedDescription, originalError: error))
                 return
             }
             
@@ -76,9 +76,7 @@ extension FreddyApi {
             isCompleted = true
             
             if let error = error {
-                DispatchQueue.main.async {
-                    self.delegate?.didEncounterError(.networkIssue(description: error.localizedDescription))
-                }
+                self.delegate?.didEncounterError(FreddyError.from(error))
                 return
             }
             
@@ -98,9 +96,8 @@ extension FreddyApi {
                     }
                 case 500...599:
                     DispatchQueue.main.async {
-                        self.delegate?.didEncounterError(.serverError(
-                            title: "Server Error",
-                            message: "HTTP \(response.statusCode): \(HTTPURLResponse.localizedString(forStatusCode: response.statusCode))"
+                        self.delegate?.didEncounterError(.internalError(
+                            description: "HTTP \(response.statusCode): \(HTTPURLResponse.localizedString(forStatusCode: response.statusCode))"
                         ))
                     }
                 default:
@@ -113,7 +110,7 @@ extension FreddyApi {
                 }
             } else {
                 DispatchQueue.main.async {
-                    self.delegate?.didEncounterError(.invalidResponse)
+                    self.delegate?.didEncounterError(.invalidResponse(description: "Connection closed unexpectedly"))
                 }
             }
         }
@@ -149,7 +146,7 @@ extension FreddyApi {
                                 }
                             } catch {
                                 DispatchQueue.main.async {
-                                    self.delegate?.didEncounterError(.decodingError(error: error, data: jsonData))
+                                    self.delegate?.didEncounterError(.decodingError(description: error.localizedDescription, originalError: error))
                                 }
                             }
                         }
@@ -168,7 +165,7 @@ extension FreddyApi {
                             }
                         } catch {
                             DispatchQueue.main.async {
-                                self.delegate?.didEncounterError(.decodingError(error: error, data: jsonData))
+                                self.delegate?.didEncounterError(.decodingError(description: error.localizedDescription, originalError: error))
                             }
                         }
                     }
