@@ -79,8 +79,7 @@ public extension AppHive {
             body: bodyData,
             emptyResponse: false,
             decoder: JSONDecoder()
-        ) { (result: Result<LoginResponse?, FreddyError>) in  // Result now expects LoginResponse?
-            
+        ) { (result: Result<LoginResponse?, FreddyError>) in
             switch result {
             case .success(let response):
                 if let response = response {
@@ -92,9 +91,17 @@ public extension AppHive {
                 if case let .httpError(statusCode, description) = error {
                     switch statusCode {
                     case 404:
-                        closure(.failure(.resourceNotFound(resource: "User")))
+                        if description.contains("User name not found") {
+                            closure(.failure(.resourceNotFound(resource: "User name")))
+                        } else {
+                            closure(.failure(.resourceNotFound(resource: description)))
+                        }
                     case 401:
-                        closure(.failure(.invalidCredentials(details: description)))
+                        if description.contains("Incorrect password") {
+                            closure(.failure(.invalidCredentials(details: "Incorrect password")))
+                        } else {
+                            closure(.failure(.invalidCredentials(details: description)))
+                        }
                     case 403:
                         closure(.failure(.forbidden(reason: description)))
                     default:
