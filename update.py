@@ -195,10 +195,16 @@ Examples:
         # Step 4: Stage all changes, commit, and push
         print("📂 Staging all changes...")
         subprocess.run(["git", "add", "."], check=True)
-        print("📝 Committing changes...")
-        subprocess.run(["git", "commit", "-m", f"Bump version to {new_version}"], check=True)
-        print("🚀 Pushing changes to remote...")
-        subprocess.run(["git", "push"], check=True)
+        
+        # Check if there are any changes to commit
+        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+        if result.stdout.strip():
+            print("📝 Committing changes...")
+            subprocess.run(["git", "commit", "-m", f"Bump version to {new_version}"], check=True)
+            print("🚀 Pushing changes to remote...")
+            subprocess.run(["git", "push"], check=True)
+        else:
+            print("ℹ️ No changes to commit, skipping commit and push.")
 
         # Step 5: Git operations and GitHub update (unless skipped)
         if not args.skip_github:
