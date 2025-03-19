@@ -8,81 +8,35 @@
 import Foundation
 
 public extension AppHive {
-    
-    // MARK: - SendVerificationCodeRequest Struct
-    /// The structure representing the request body for sending a verification code to a user.
-    ///
-    /// This request requires the user's email address.
-    struct SendVerificationCodeRequest: Encodable {
-        let email: String
-    }
-
-    // MARK: - SendVerificationCodeResponse Struct
-    /// The structure representing the response from the API after sending a verification code.
-    ///
-    /// The response contains the verification `code` as a string.
-    struct SendVerificationCodeResponse: Decodable {
-        let code: String
-    }
-
-    // MARK: - Send Verification Code Function
-    /// Sends a 4-digit verification code to the provided email address.
-    ///
+    /// Sends a verification code to the user's email address.
     /// - Parameters:
-    ///   - email: The email address of the user to send the verification code.
-    ///   - closure: Completion handler that returns a `Result` with `SendVerificationCodeResponse` on success or `FreddyError` on failure.
-    ///
-    /// This function performs an HTTP `POST` request to send a verification code to the user's email.
-    ///
-    /// - Example:
-    ///   ```swift
-    ///   AppHive().sendVerificationCode(email: "user@example.com") { result in
-    ///       switch result {
-    ///       case .success(let response):
-    ///           //print("Verification Code: \(response.code)")
-    ///       case .failure(let error):
-    ///           //print("Failed to send verification code: \(error)")
-    ///       }
-    ///   }
-    ///   ```
-    func sendVerificationCode(
-        email: String,
-        closure: @escaping @Sendable (Result<SendVerificationCodeResponse, FreddyError>) -> Void
-    ) {
-        // 1. API Endpoint
-        let endpoint = "/verificationEmail"
+    ///   - email: The email address to send the verification code to
+    ///   - fullName: The full name of the recipient
+    ///   - zeptomailApiKey: The API key for the ZeptoMail service
+    ///   - completion: A completion handler that returns either a success with the verification code or a failure with an error
+    func sendVerificationCode(to email: String, fullName: String, zeptomailApiKey: String, completion: @escaping (Result<String, FreddyError>) -> Void) {
+        // Generate a random 4-digit code
+        let verificationCode = String(Int.random(in: 1000...9999))
+        let codeExpiryMinutes = 10
         
-        // 2. Create request body
-        let requestBody = SendVerificationCodeRequest(email: email)
+        // Prepare merge info for the email template
+        let mergeInfo: [String: String] = [
+            "token": verificationCode,
+            "expiry_minutes": "\(codeExpiryMinutes)",
+            "contact_email": "support@aitronos.com"
+        ]
         
-        // 3. Encode request body as JSON
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
-            closure(.failure(.invalidData(description: "Failed to serialize request body")))
-            return
-        }
+        // Create recipient
+        let recipient = Recipient(email: email, name: fullName)
         
-        // 4. Create config with Bearer token
-        let config = Config(baseUrl: baseUrl, backendKey: userToken)
-        
-        // 5. Perform the request using the helper function `performRequest`
-        performRequest(
-            endpoint: endpoint,
-            method: .post,
-            config: config,
-            body: bodyData,
-            emptyResponse: false,
-            decoder: JSONDecoder()
-        ) { (result: Result<SendVerificationCodeResponse?, FreddyError>) in
+        // Send the verification email
+        let emailService = ZeptoMailService(apiKey: zeptomailApiKey)
+        emailService.sendOTPEmail(to: [recipient], mergeInfo: mergeInfo) { result in
             switch result {
-            case .success(let response):
-                if let response = response {
-                    closure(.success(response)) // Pass the non-nil response containing the verification code
-                } else {
-                    closure(.failure(.noData)) // Handle empty response case
-                }
-                
+            case .success:
+                completion(.success(verificationCode))
             case .failure(let error):
-                closure(.failure(error)) // Pass the error to the caller
+                completion(.failure(error))
             }
         }
     }

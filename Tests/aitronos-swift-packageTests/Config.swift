@@ -69,4 +69,16 @@ public struct Config {
             return value
         }
     }
+    
+    public static var zeptomailApiKey: String {
+        get {
+            let plist = getFile()
+            
+            guard let value = plist.object(forKey: "ZeptoMail_ApiKey") as? String else {
+                fatalError("Couldn't find key 'ZeptoMail_ApiKey' in 'Config.plist'. Please check the spelling of the key.")
+            }
+            
+            return value
+        }
+    }
 }

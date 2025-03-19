@@ -1,5 +1,5 @@
 //
-//  App-Hive_packageTests.swift
+//  AuthenticationTests.swift
 //  aitronos-swift-package
 //
 //  Created by Phillip Loacker on 19.10.2024.
@@ -67,5 +67,38 @@ final class AuthenticationTests: XCTestCase {
         } catch let error as FreddyError {
             XCTAssertEqual(error, .resourceNotFound(resource: "User name not found"), "Expected user name not found error")
         }
+    }
+
+    func testSendVerificationCode() async throws {
+        // First login to get a token
+        let email = Config.testEmail
+        let password = Config.testPassword
+        let aitronos = try await Aitronos(usernmeEmail: email, password: password)
+        
+        // Create an instance of AppHive with the token
+        let appHive = aitronos.appHive
+        
+        // Create an expectation for the asynchronous verification code call
+        let expectation = XCTestExpectation(description: "Send verification code should complete")
+        
+        // Call sendVerificationCode
+        appHive.sendVerificationCode(email: email) { result in
+            switch result {
+            case .success(let response):
+                // Verify the response contains a code
+                XCTAssertFalse(response.code.isEmpty, "Verification code should not be empty")
+                XCTAssertEqual(response.code.count, 4, "Verification code should be 4 digits")
+                XCTAssertTrue(response.code.allSatisfy { $0.isNumber }, "Verification code should contain only numbers")
+                
+            case .failure(let error):
+                XCTFail("Failed to send verification code: \(error)")
+            }
+            
+            // Fulfill the expectation
+            expectation.fulfill()
+        }
+        
+        // Wait for the expectation to be fulfilled, or time out after 10 seconds
+        await fulfillment(of: [expectation], timeout: 10.0)
     }
 }
