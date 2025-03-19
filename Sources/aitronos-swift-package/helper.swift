@@ -526,7 +526,7 @@ public extension FreddyError {
 }
 
 // MARK: - Perform HTTPS Request Function
-public func performRequest<T: Decodable>(
+public static func performRequest<T: Decodable>(
     endpoint: String,
     method: HTTPMethod,
     config: Config,

@@ -67,8 +67,8 @@ public extension AppHive {
         // 2. Create request body
         let requestBody = RegisterUserRequest(email: email, password: password, fullName: fullName)
         
-        // 3. Encode request body as JSON
-        guard let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: []) else {
+        // 3. Encode request body as JSON (Corrected)
+        guard let bodyData = try? JSONEncoder().encode(requestBody) else {
             closure(.failure(.invalidData(description: "Failed to serialize request body")))
             return
         }
@@ -77,9 +77,9 @@ public extension AppHive {
         let config = Config(baseUrl: baseUrl, backendKey: "") // No backend key needed
         
         // 5. Perform the request using the helper function `performRequest`
-        performRequest(
+        AppHive.performRequest(
             endpoint: endpoint,
-            method: .post,
+            method: HTTPMethod.post,
             config: config,
             body: bodyData,
             emptyResponse: false,
