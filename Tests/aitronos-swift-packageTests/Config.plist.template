@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Test_Key</key>
+    <string>your_test_key_here</string>
+    <key>Test_Email</key>
+    <string>your_test_email_here</string>
+    <key>Test_Password</key>
+    <string>your_test_password_here</string>
+    <key>GitHub_Token</key>
+    <string>your_github_token_here</string>
+</dict>
+</plist> 

@@ -132,3 +132,4 @@ my_env/bin/
 my_env/lib/python3.9/site-packages/pip/_internal/operations/
 
 my_env/lib/python3.9/site-packages/pip/_internal/
+Tests/aitronos-swift-packageTests/Config.plist
