@@ -57,4 +57,16 @@ public struct Config {
             return value
         }
     }
+    
+    public static var githubToken: String {
+        get {
+            let plist = getFile()
+            
+            guard let value = plist.object(forKey: "GitHub_Token") as? String else {
+                fatalError("Couldn't find key 'GitHub_Token' in 'Config.plist'. Please check the spelling of the key.")
+            }
+            
+            return value
+        }
+    }
 }

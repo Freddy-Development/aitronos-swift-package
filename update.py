@@ -99,12 +99,23 @@ def get_github_repo() -> tuple[str, str]:
 def create_github_update(version: str, token: Optional[str] = None) -> None:
     """Create a new release on GitHub."""
     if not token:
-        token = os.environ.get("GITHUB_TOKEN")
-        if not token:
-            raise ValueError("GitHub token not provided. Set GITHUB_TOKEN environment variable.")
+        # Try to get token from Config.swift
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["swift", "-e", "import Foundation; print(Config.githubToken)"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            token = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            token = os.environ.get("GITHUB_TOKEN")
+            if not token:
+                raise ValueError("GitHub token not provided. Set GITHUB_TOKEN environment variable or add it to Config.plist.")
 
     owner, repo = get_github_repo()
-    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/releases"  # Corrected endpoint
+    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/releases"
     
     headers = {
         "Authorization": f"token {token}",
