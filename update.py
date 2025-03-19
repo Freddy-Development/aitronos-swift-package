@@ -97,16 +97,26 @@ def get_github_repo() -> tuple[str, str]:
     except subprocess.CalledProcessError:
         raise ValueError("Could not get GitHub repository information")
 
+def read_config_plist():
+    """Read and parse the Config.plist file manually."""
+    config_path = os.path.join('Tests', 'aitronos-swift-packageTests', 'Config.plist')
+    try:
+        with open(config_path, 'r') as f:
+            content = f.read()
+            # Extract GitHub token using regex
+            match = re.search(r'"GitHub_Token"\s*=\s*"([^"]+)"', content)
+            if match:
+                return match.group(1)
+    except FileNotFoundError:
+        pass
+    return None
+
 def create_github_update(version: str, token: Optional[str] = None) -> None:
     """Create a new release on GitHub."""
     if not token:
         # Try to get token from Config.plist
-        try:
-            config_path = os.path.join('Tests', 'aitronos-swift-packageTests', 'Config.plist')
-            with open(config_path, 'rb') as fp:
-                plist = plistlib.load(fp)
-                token = plist.get('GitHub_Token')
-        except (FileNotFoundError, plistlib.InvalidFileException, KeyError):
+        token = read_config_plist()
+        if not token:
             token = os.environ.get("GITHUB_TOKEN")
             
         if not token:
