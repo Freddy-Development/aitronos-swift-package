@@ -15,13 +15,13 @@ final class RegisterUserTests: XCTestCase {
         let random = Int.random(in: 1000...9999)
         return "test\(timestamp)\(random)@aitronos.com"
     }
-
+    
     func testRegisterUserSuccess() async throws {
         // Arrange
         let email = generateRandomEmail()
         let password = "Test@123456"
         let fullName = "Test User"
-
+        
         // Act & Assert
         let expectation = XCTestExpectation(description: "Register user should succeed")
         
@@ -107,4 +107,4 @@ final class RegisterUserTests: XCTestCase {
             continuation.resume()
         }
     }
-} 
+}
