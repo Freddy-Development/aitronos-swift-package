@@ -55,7 +55,7 @@ public extension AppHive {
     ///       }
     ///   }
     ///   ```
-    func registerUser(
+    static func registerUser(
         email: String,
         password: String,
         fullName: String,
