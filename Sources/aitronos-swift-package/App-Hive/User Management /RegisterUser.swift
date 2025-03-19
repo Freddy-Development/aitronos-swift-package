@@ -77,7 +77,7 @@ public extension AppHive {
         let config = Config(baseUrl: baseUrl, backendKey: "") // No backend key needed
         
         // 5. Perform the request using the helper function `performRequest`
-        AppHive.performRequest(
+        performRequest(
             endpoint: endpoint,
             method: HTTPMethod.post,
             config: config,
