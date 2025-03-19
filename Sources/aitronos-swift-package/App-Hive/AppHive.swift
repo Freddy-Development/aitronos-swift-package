@@ -16,8 +16,7 @@ public final class AppHive {
             }
         }
     }
-    
-    public init(userToken: String) {
+    public init (userToken: String) {
         self.userToken = userToken
     }
 }
