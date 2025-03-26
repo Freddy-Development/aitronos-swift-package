@@ -53,9 +53,9 @@ public extension AppHive {
     // MARK: - LoginRequest Struct
     /// Represents the login request body
     struct LoginRequest: Codable, Sendable {
-        let emailorusername: String
-        let password: String
-        let deviceInformation: DeviceInformation
+        public let emailorusername: String
+        public let password: String
+        public let deviceInformation: DeviceInformation
     }
     
     // MARK: - Login Function
