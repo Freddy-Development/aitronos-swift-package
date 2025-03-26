@@ -38,6 +38,16 @@ public extension AppHive {
         public let deviceId: String
         public let operatingSystem: String
         public let platform: String
+
+        public init(device: String, location: String, latitude: String, longitude: String, deviceId: String, operatingSystem: String, platform: String) {
+            self.device = device
+            self.location = location
+            self.latitude = latitude
+            self.longitude = longitude
+            self.deviceId = deviceId
+            self.operatingSystem = operatingSystem
+            self.platform = platform
+        }
         
         enum CodingKeys: String, CodingKey {
             case device
