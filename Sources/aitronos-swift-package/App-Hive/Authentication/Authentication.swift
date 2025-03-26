@@ -31,13 +31,13 @@ public extension AppHive {
     // MARK: - DeviceInformation Struct
     /// Represents device information for login verification
     struct DeviceInformation: Codable, Sendable {
-        let device: String
-        let location: String
-        let latitude: String
-        let longitude: String
-        let deviceId: String
-        let operatingSystem: String
-        let platform: String
+        public let device: String
+        public let location: String
+        public let latitude: String
+        public let longitude: String
+        public let deviceId: String
+        public let operatingSystem: String
+        public let platform: String
         
         enum CodingKeys: String, CodingKey {
             case device
