@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import CoreLocation
 
 public extension AppHive {
     
@@ -58,6 +59,80 @@ public extension AppHive {
             case operatingSystem = "operatingSystem"
             case platform
         }
+        
+        /// Gathers device information automatically
+        public static func gatherDeviceInformation() -> DeviceInformation {
+            let device = getDeviceType()
+            let location = "Unknown" // Default location
+            let (latitude, longitude) = getLocation()
+            let deviceId = UUID().uuidString
+            let operatingSystem = getOperatingSystem()
+            let platform = getPlatform()
+            
+            return DeviceInformation(
+                device: device,
+                location: location,
+                latitude: latitude ?? "0",
+                longitude: longitude ?? "0",
+                deviceId: deviceId,
+                operatingSystem: operatingSystem,
+                platform: platform
+            )
+        }
+        
+        private static func getDeviceType() -> String {
+            #if targetEnvironment(macCatalyst)
+                return "Mac"
+            #else
+                return "Mobile"
+            #endif
+        }
+        
+        private static func getOperatingSystem() -> String {
+            #if os(macOS)
+                return "macOS"
+            #elseif os(iOS)
+                return "iOS"
+            #elseif os(tvOS)
+                return "tvOS"
+            #elseif os(watchOS)
+                return "watchOS"
+            #else
+                return "Unknown"
+            #endif
+        }
+        
+        private static func getPlatform() -> String {
+            #if os(macOS)
+                return "macOS"
+            #elseif os(iOS)
+                return "iOS"
+            #elseif os(tvOS)
+                return "tvOS"
+            #elseif os(watchOS)
+                return "watchOS"
+            #else
+                return "Unknown"
+            #endif
+        }
+        
+        private static func getLocation() -> (String?, String?) {
+            #if os(iOS) || os(macOS)
+                if #available(macOS 10.15, iOS 13.0, *) {
+                    let locationManager = CLLocationManager()
+                    locationManager.requestWhenInUseAuthorization()
+                    
+                    if CLLocationManager.locationServicesEnabled() {
+                        if let location = locationManager.location {
+                            let latitude = String(location.coordinate.latitude)
+                            let longitude = String(location.coordinate.longitude)
+                            return (latitude, longitude)
+                        }
+                    }
+                }
+            #endif
+            return (nil, nil)
+        }
     }
     
     // MARK: - LoginRequest Struct
@@ -65,7 +140,7 @@ public extension AppHive {
     struct LoginRequest: Codable, Sendable {
         public let emailorusername: String
         public let password: String
-        public let deviceInformation: DeviceInformation?
+        public let deviceInformation: DeviceInformation
     }
     
     // MARK: - Login Function
@@ -74,32 +149,19 @@ public extension AppHive {
     /// - Parameters:
     ///   - usernmeEmail: The username or email of the user attempting to log in.
     ///   - password: The user's password.
-    ///   - deviceInformation: Optional information about the device making the login request.
     ///   - closure: A closure that returns a `Result` containing either the `LoginResponse` on success or a `FreddyError` on failure.
-    ///
-    /// The function performs an HTTP `POST` request to the `/auth/login` endpoint of the Freddy API to authenticate the user and return a token and refresh token. The request does not require Bearer authorization since it's the login step.
-    ///
-    /// - Example:
-    ///   ```swift
-    ///   AppHive.login(usernmeEmail: "user@example.com", password: "password123") { result in
-    ///       switch result {
-    ///       case .success(let loginResponse):
-    ///           //print("Logged in! Token: \(loginResponse.token)")
-    ///       case .failure(let error):
-    ///           //print("Login failed: \(error)")
-    ///       }
-    ///   }
-    ///   ```
     static func login(
         usernmeEmail: String,
         password: String,
-        deviceInformation: DeviceInformation? = nil,
         closure: @Sendable @escaping (Result<LoginResponse, FreddyError>) -> Void
     ) {
         // 1. API Endpoint
         let endpoint = "/auth/login"
         
-        // 2. Create request body
+        // 2. Gather device information automatically
+        let deviceInformation = DeviceInformation.gatherDeviceInformation()
+        
+        // 3. Create request body
         let requestBody = LoginRequest(
             emailorusername: usernmeEmail,
             password: password,
@@ -111,10 +173,10 @@ public extension AppHive {
             return
         }
         
-        // 3. Config without authorization (since this is the login endpoint)
-        let config = Config(baseUrl: "https://freddy-api.aitronos.ch", backendKey: "")
+        // 4. Config without authorization (since this is the login endpoint)
+        let config = Config(baseUrl: baseUrl, backendKey: "")
         
-        // 4. Perform the request using the helper function `performRequest`
+        // 5. Perform the request using the helper function `performRequest`
         performRequest(
             endpoint: endpoint,
             method: .post,
@@ -143,7 +205,7 @@ public extension AppHive {
                         if description.contains("Incorrect password") {
                             closure(.failure(.invalidCredentials(details: "Incorrect password")))
                         } else {
-                            closure(.failure(.invalidCredentials(details: description)))
+                            closure(.failure(.unauthorized(reason: description)))
                         }
                     case 403:
                         closure(.failure(.forbidden(reason: description)))
@@ -162,14 +224,12 @@ extension AppHive {
     @available(macOS 10.15, *)
     static func login(
         usernmeEmail: String,
-        password: String,
-        deviceInformation: DeviceInformation? = nil
+        password: String
     ) async throws -> LoginResponse {
         try await withCheckedThrowingContinuation { continuation in
             login(
                 usernmeEmail: usernmeEmail,
-                password: password,
-                deviceInformation: deviceInformation
+                password: password
             ) { result in
                 switch result {
                 case .success(let loginResponse):

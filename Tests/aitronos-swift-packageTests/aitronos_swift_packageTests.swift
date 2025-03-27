@@ -49,7 +49,7 @@ final class aitronos_swift_packageTests: XCTestCase {
             XCTFail("Initialization should fail with invalid credentials.")
         } catch let error as FreddyError {
             // 3. Verify the error is as expected
-            XCTAssertEqual(error, .resourceNotFound(resource: "Requested resource"), "The error should indicate user not found.")
+            XCTAssertEqual(error, .resourceNotFound(resource: "User name not found"), "The error should indicate user not found.")
         } catch {
             XCTFail("Unexpected error type: \(error)")
         }
@@ -61,8 +61,9 @@ final class aitronos_swift_packageTests: XCTestCase {
         
         do {
             _ = try await Aitronos(usernmeEmail: email, password: password)
+            XCTFail("Initialization should fail with invalid password.")
         } catch let error as FreddyError {
-            XCTAssertEqual(error, .unauthorized(reason: "Authentication required"), "The error should indicate incorrect password.")
+            XCTAssertEqual(error, .invalidCredentials(details: "Incorrect password"), "The error should indicate incorrect password.")
         } catch {
             XCTFail("Unexpected error type: \(error)")
         }
