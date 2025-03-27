@@ -26,9 +26,9 @@ public class Aitronos: @unchecked Sendable {
     }
 
     @available(macOS 10.15, *)
-    public init(usernmeEmail: String, password: String) async throws {
+    public init(usernmeEmail: String, password: String, deviceInformation: AppHive.DeviceInformation) async throws {
         do {
-            let loginResponse = try await AppHive.login(usernmeEmail: usernmeEmail, password: password)
+            let loginResponse = try await AppHive.login(usernmeEmail: usernmeEmail, password: password, deviceInformation: deviceInformation)
             self.userToken = loginResponse.token
         } catch {
             throw error
