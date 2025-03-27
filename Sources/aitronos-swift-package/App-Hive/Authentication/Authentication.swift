@@ -65,7 +65,7 @@ public extension AppHive {
     struct LoginRequest: Codable, Sendable {
         public let emailorusername: String
         public let password: String
-        public let deviceInformation: DeviceInformation
+        public let deviceInformation: DeviceInformation?
     }
     
     // MARK: - Login Function
@@ -74,7 +74,7 @@ public extension AppHive {
     /// - Parameters:
     ///   - usernmeEmail: The username or email of the user attempting to log in.
     ///   - password: The user's password.
-    ///   - deviceInformation: Information about the device making the login request.
+    ///   - deviceInformation: Optional information about the device making the login request.
     ///   - closure: A closure that returns a `Result` containing either the `LoginResponse` on success or a `FreddyError` on failure.
     ///
     /// The function performs an HTTP `POST` request to the `/auth/login` endpoint of the Freddy API to authenticate the user and return a token and refresh token. The request does not require Bearer authorization since it's the login step.
@@ -93,7 +93,7 @@ public extension AppHive {
     static func login(
         usernmeEmail: String,
         password: String,
-        deviceInformation: DeviceInformation,
+        deviceInformation: DeviceInformation? = nil,
         closure: @Sendable @escaping (Result<LoginResponse, FreddyError>) -> Void
     ) {
         // 1. API Endpoint
@@ -163,7 +163,7 @@ extension AppHive {
     static func login(
         usernmeEmail: String,
         password: String,
-        deviceInformation: DeviceInformation
+        deviceInformation: DeviceInformation? = nil
     ) async throws -> LoginResponse {
         try await withCheckedThrowingContinuation { continuation in
             login(
